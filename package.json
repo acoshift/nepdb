@@ -1,0 +1,23 @@
+{
+  "name": "nepdb",
+  "version": "1.0.0",
+  "description": "Nep Nep Rest Database",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/acoshift/nepdb.git"
+  },
+  "keywords": [
+    "mongodb",
+    "rest"
+  ],
+  "author": "acoshift",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/acoshift/nepdb/issues"
+  },
+  "homepage": "https://github.com/acoshift/nepdb#readme"
+}
