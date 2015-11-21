@@ -85,15 +85,24 @@ MongoClient.connect(connectionUri, (err, db) => {
   var app = express();
 
   // TODO: get database name from domain name
-  // TODO: get database name from url if no custom domain name
-  // TODO: query database info
-  // TODO: check api-key form request database info
-  // TODO: check CORS from request with database info
-  // TODO: check role from request with database info
-  // TODO: add log data
-  // TODO: run request command
-  // TODO: send response back
+  app.use((req, res, next) => {
+    ;
+  });
   
+  // TODO: get database name from subdomain if no custom domain name
+  app.use((req, res, next) => {
+    ;
+  });
+  
+  // TODO: query database info
+  app.use((req, res, next) => {
+    // TODO: check api-key form request database info
+    // TODO: check CORS from request with database info
+    // TODO: check role from request with database info
+    // TODO: add log data
+    // TODO: run request command
+    // TODO: send response back
+  });
   
   config.http && http.createServer(app).listen(config.http);
   
