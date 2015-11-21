@@ -4,7 +4,7 @@
 
 Commercial RESTful MongoDB with nep nep!
 
-## Getting startd
+## Getting started
 
 1. Clone our nep `$ git clone https://github.com/acoshift/nepdb.git`
 2. Change directory `$ cd nepdb`
