@@ -48,6 +48,14 @@
             "ca": [ "", "", "" ]
           }
         }
+        
+  api:
+    /api/:db/:collection?q={} - native mongodb query
+    /api/:db/:collection/:id - GET, POST, PUT, DELETE
+    /api/:db/fs - GridFS
+      /chunks - binary chunks
+      /files - file’s metadata
+      TODO
 */
 
 /// <reference path="typings/tsd.d.ts" />
@@ -86,12 +94,12 @@ MongoClient.connect(connectionUri, (err, db) => {
 
   // TODO: get database name from domain name
   app.use((req, res, next) => {
-    ;
+    next();
   });
   
   // TODO: get database name from url if no custom domain name
   app.use((req, res, next) => {
-    ;
+    next();
   });
   
   // TODO: query database info
