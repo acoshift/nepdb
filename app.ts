@@ -69,7 +69,6 @@ import * as tls from "tls";
 import * as ip from "ip";
 import * as bodyParser from "body-parser";
 import * as methodOverride from "method-override";
-import * as winston from "winston";
 import { MongoClient, ObjectID } from "mongodb";
 import { escape } from "querystring";
 import { Config } from "./config";

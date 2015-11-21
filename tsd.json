@@ -20,9 +20,6 @@
     "mongodb/mongodb.d.ts": {
       "commit": "d401629469aceb5b2a23857aa448713f9771bd91"
     },
-    "winston/winston.d.ts": {
-      "commit": "d401629469aceb5b2a23857aa448713f9771bd91"
-    },
     "body-parser/body-parser.d.ts": {
       "commit": "d401629469aceb5b2a23857aa448713f9771bd91"
     },
