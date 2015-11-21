@@ -89,7 +89,7 @@ MongoClient.connect(connectionUri, (err, db) => {
     ;
   });
   
-  // TODO: get database name from subdomain if no custom domain name
+  // TODO: get database name from url if no custom domain name
   app.use((req, res, next) => {
     ;
   });
