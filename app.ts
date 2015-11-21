@@ -112,15 +112,18 @@ MongoClient.connect(connectionUri, (err, db) => {
     // TODO: send response back
   });
   
-  config.http && http.createServer(app).listen(config.http);
+  config.http && http.createServer(app).listen(config.http, () => {
+    console.log(`http server started at port ${config.http}`);
+  });
   
   config.https && db.collection('ssl').findOne({ host: config.host }, (err, r) => {
-    if (err) return;
+    if (err || !r) return;
     
     let ops = {
-      cert: '',
-      key: '',
-      ca: '',
+      cert: r.ssl.cert || '',
+      key: r.ssl.key || '',
+      ca: r.ssl.ca || '',
+      
       SNICallback: (host, cb) => {
         db.collection('ssl').findOne({ host: host }, (err, r) => {
           if (err || !r) { cb(null, null); return; }
@@ -128,17 +131,13 @@ MongoClient.connect(connectionUri, (err, db) => {
             cert: r.ssl.cert || '',
             key: r.ssl.key || '',
             ca: r.ssl.ca || ''
-          }).context)
+          }).context);
         });
       }
     }
     
-    if (r) {
-      ops.cert = r.ssl.cert || '';
-      ops.key = r.ssl.key || '';
-      ops.ca = r.ssl.ca || '';
-    }
-    
-    https.createServer(ops, app).listen(config.https);
+    https.createServer(ops, app).listen(config.https, () => {
+      console.log(`https server started at port ${config.http}`);
+    });
   });
 })
