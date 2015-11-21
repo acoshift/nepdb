@@ -1,8 +1,8 @@
 {
   "name": "nepdb",
   "version": "1.0.0",
-  "description": "Nep Nep Rest Database",
-  "main": "server.js",
+  "description": "Nep Database",
+  "main": "app.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -14,10 +14,19 @@
     "mongodb",
     "rest"
   ],
-  "author": "acoshift",
+  "author": "Thanatat Tamtan <acoshift@gmail.com>",
   "license": "ISC",
   "bugs": {
     "url": "https://github.com/acoshift/nepdb/issues"
   },
-  "homepage": "https://github.com/acoshift/nepdb#readme"
+  "homepage": "https://github.com/acoshift/nepdb#readme",
+  "dependencies": {
+    "body-parser": "^1.14.1",
+    "express": "^4.13.3",
+    "ip": "^1.1.0",
+    "kerberos": "0.0.17",
+    "method-override": "^2.3.5",
+    "mongodb": "^2.0.48",
+    "winston": "^2.1.0"
+  }
 }

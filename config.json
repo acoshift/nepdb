@@ -1,0 +1,12 @@
+{
+  "http": 80,
+  "https": 443,
+  "host": "localhost",
+  "database": {
+    "user": "admin",
+    "pwd": "1234",
+    "host": "localhost",
+    "port": 27017,
+    "db": "nepdb"
+  }
+}
