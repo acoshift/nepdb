@@ -3,8 +3,8 @@
   "https": 443,
   "host": "localhost",
   "database": {
-    "user": "admin",
-    "pwd": "1234",
+    "user": "",
+    "pwd": "",
     "host": "localhost",
     "port": 27017,
     "db": "nepdb"
