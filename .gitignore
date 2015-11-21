@@ -1,5 +1,6 @@
 node_modules/
 typings/
 logs/
+.vscode/
 *.js
 *.js.map
