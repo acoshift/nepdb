@@ -1,7 +1,5 @@
 export interface Config {
-  http?: number;
-  https?: number;
-  host?: string;
+  port?: number;
   database?: DatabaseConfig;
 }
 

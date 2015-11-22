@@ -1,76 +1,12 @@
-/*
-  collection:
-    - db: store database info
-        {
-          "name": "test",
-          "api": [
-            {
-              "key": "xxxxxxxxxxxxxxxxx",
-              "desc": "my api key",
-              "roles": [
-                {
-                  "collection0": [ "GET", "POST" ],
-                  "collection1": [ "DELETE" ]
-                }
-              ]
-              "createAt": 1212121
-              "updateAt": 1444224
-            }
-          ],
-          "createAt": 1212121
-          "updateAt": 1444224
-        }
-    - log: store api called log
-        {
-          "db": "_id of db"
-          "key": "xxxxxxxxxxxxxxxxx",
-          "method": "GET",
-          "collection": "product",
-          "querystring": "?q={}",
-          "origin": "www.myweb.com",
-          "ok": 1,
-          "timestamp": 1122121
-        }
-    - user: store user info
-        {
-          "user": "user1",
-          "pass": "some bcrypt",
-          "db": [ "_id of db0", "_id of db2", "_id of db3" ],
-          "createAt": 1212121
-          "updateAt": 1444224
-        }
-    - ssl: store ssl data for each domain name
-        {
-          host: "myweb.com",
-          "ssl": {
-            "cert": "",
-            "key": "",
-            "ca": [ "", "", "" ]
-          }
-        }
-        
-  api:
-    /api/:db/:collection?q={} - native mongodb query
-    /api/:db/:collection/:id - GET, POST, PUT, DELETE
-    /api/:db/fs - GridFS
-      /chunks - binary chunks
-      /files - file’s metadata
-      TODO
-*/
-
-/// <reference path="typings/tsd.d.ts" />
+/// <reference path="./typings/tsd.d.ts" />
 'use strict';
 
 import * as express from "express";
-import * as path from "path";
 import * as http from "http";
-import * as https from "https";
-import * as tls from "tls";
-import * as ip from "ip";
-import * as bodyParser from "body-parser";
-import * as methodOverride from "method-override";
 import { MongoClient, ObjectID } from "mongodb";
 import { escape } from "querystring";
+import * as apiNepq from "./api/nepq";
+import * as apiRest from "./api/rest";
 import { Config } from "./config";
 
 var config: Config = require('./config');
@@ -88,55 +24,27 @@ function objectId(id: string): ObjectID {
   return _id;
 }
 
+function json(s: string): any {
+  let r = {};
+    try {
+      r = JSON.parse(s);
+    } catch (e) { }
+  return r;
+}
+
 MongoClient.connect(connectionUri, (err, db) => {
   var app = express();
+  
+  app.use('nepq', apiNepq);
+  app.use('rest', apiRest);
+  
+  app.use((req, res) => {
+    ;
+  });
+  
+  let port = config.port || 8000;
 
-  // TODO: get database name from domain name
-  app.use((req, res, next) => {
-    next();
-  });
-  
-  // TODO: get database name from url if no custom domain name
-  app.use((req, res, next) => {
-    next();
-  });
-  
-  // TODO: query database info
-  app.use((req, res, next) => {
-    // TODO: check api-key form request database info
-    // TODO: check CORS from request with database info
-    // TODO: check role from request with database info
-    // TODO: add log data
-    // TODO: run request command
-    // TODO: send response back
-  });
-  
-  config.http && http.createServer(app).listen(config.http, () => {
-    console.log(`http server started at port ${config.http}`);
-  });
-  
-  config.https && db.collection('ssl').findOne({ host: config.host }, (err, r) => {
-    if (err || !r) return;
-    
-    let ops = {
-      cert: r.ssl.cert || '',
-      key: r.ssl.key || '',
-      ca: r.ssl.ca || '',
-      
-      SNICallback: (host, cb) => {
-        db.collection('ssl').findOne({ host: host }, (err, r) => {
-          if (err || !r) { cb(null, null); return; }
-          cb(null, tls.createSecureContext({
-            cert: r.ssl.cert || '',
-            key: r.ssl.key || '',
-            ca: r.ssl.ca || ''
-          }).context);
-        });
-      }
-    }
-    
-    https.createServer(ops, app).listen(config.https, () => {
-      console.log(`https server started at port ${config.http}`);
-    });
+  http.createServer(app).listen(port, () => {
+    console.log(`http server started at port ${port}`);
   });
 })

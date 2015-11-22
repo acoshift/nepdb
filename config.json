@@ -1,7 +1,5 @@
 {
-  "http": 80,
-  "https": 443,
-  "host": "localhost",
+  "port": 8000,
   "database": {
     "user": "",
     "pwd": "",
