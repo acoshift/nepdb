@@ -1,18 +1,18 @@
 # nepdb
 
-~~Commercial RESTful api for MongoDB~~
+~~MongoDB API in Node.js~~
 
-Commercial RESTful MongoDB with nep nep!
+MongoDB with nep nep~!
 
 ## Getting started
 
 1. Clone our nep `$ git clone https://github.com/acoshift/nepdb.git`
 2. Change directory `$ cd nepdb`
-3. Install node modules `$ npm install`
-4. Install TypeScript Compiler `$ npm install -g typescript`
+3. Install node modules `$ npm i`
+4. Install TypeScript Compiler `$ npm i -g typescript`
 5. Compile `$ tsc`
-6. Run MongoDB `$ mongod --dbpath=./db` or `$ mongod --dbpath=./db --auth --quiet --fork`
-7. Release nep power~! `$ node .`
+6. Start MongoDB server `$ mongod --dbpath=./db`
+7. Release nep power~! `$ node app.js`
 
-## Rest API Docs
+## API Docs
 > TODO
