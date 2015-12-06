@@ -2,5 +2,6 @@ node_modules/
 typings/
 log/
 .vscode/
-*.js
+build/
+dist/
 *.js.map

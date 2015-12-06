@@ -15,4 +15,64 @@ MongoDB with nep nep~!
 7. Release nep power~! `$ node app.js`
 
 ## API Docs
-> TODO
+
+### Create
+`create db.name(d: __document__) {}`
+
+### Read
+`read db.name(__filter__) {}`
+
+### Update
+`update db.name(q: {__filter__}, d: {__document__}) {}`
+
+### Delete
+`delete db.name(__filter__) {}`
+
+---
+
+## Example
+
+Create one document:
+```
+create stock.product(d: {
+  name: "p1",
+  price: 100
+}) {}
+```
+
+Create multiple documents
+```
+create stock.product(d: [
+  { name: "p1", price: 100 },
+  { name: "p2", price: 150 },
+  { name: "p3", price: 100 }
+]) {}
+```
+
+Read documents
+```
+read stock.product(name: "p1") { price }
+```
+
+Read documents with paging
+
+```
+read stock.product(price: 100, $limit: 10, $skip: 20) { name }
+```
+
+Update a document
+```
+update stock.product(
+  q: { "name": "p1" },
+  d: { "$set": { "name": "p6" } },
+  $limit: 1
+) {}
+```
+
+Update all documents matched filter
+```
+update stock.product(
+  q: { "price": 100 },
+  d: { "$inc": { "price": 30 } }
+) {}
+```

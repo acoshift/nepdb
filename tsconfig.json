@@ -18,5 +18,22 @@
         "**/*.ts",
         "**/*.tsx",
         "!node_modules/**"
-    ]
+    ],
+    "files": [
+        "api/nepq.ts",
+        "api/rest.ts",
+        "config.d.ts",
+        "typings/body-parser/body-parser.d.ts",
+        "typings/express/express.d.ts",
+        "typings/ip/ip.d.ts",
+        "typings/method-override/method-override.d.ts",
+        "typings/mime/mime.d.ts",
+        "typings/mongodb/mongodb.d.ts",
+        "typings/node/node.d.ts",
+        "typings/serve-static/serve-static.d.ts",
+        "typings/tsd.d.ts"
+    ],
+    "atom": {
+        "rewriteTsconfig": true
+    }
 }
