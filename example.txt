@@ -1,0 +1,13 @@
+create test.product([
+  { name: "JavaScript ebook", price: 16.25 },
+  { name: "iPhone 10S", price: 20000 },
+  { name: "Nexus 16", price: 15000 },
+  { name: "CPU i9 mountainlake @6.58 GHz", price: 26000 },
+  { name: "RAM DDR8 6400MHz 1TB", price: 16000 },
+  { name: "LCD 128\" God HD", price: 14000 },
+  { name: "GeForce GTX Attack on Titan", price: 40000 },
+  { name: "Macrosoft Door 16", price: 0 }
+])
+
+read test.product(price: { $gt: 15000 }, $limit: 3) { name }
+
