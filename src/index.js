@@ -106,13 +106,11 @@ MongoClient.connect(connectionUri, (err, db) => {
 
     c = c ? `${c}.${q.name}` : q.name;
 
-    if (typeof q.param.d === 'undefined') return resp(400);
-
-    if (q.param.d instanceof Array) {
-      db.db(d).collection(c).insertMany(q.param.d, { w: 1 }, resp);
+    if (q.param instanceof Array) {
+      db.db(d).collection(c).insertMany(q.param, { w: 1 }, resp);
       return;
     }
-    db.db(d).collection(c).insertOne(q.param.d, { w: 1 }, resp);
+    db.db(d).collection(c).insertOne(q.param, { w: 1 }, resp);
   });
 
   nq.on('read', null, null, q => {
@@ -138,6 +136,23 @@ MongoClient.connect(connectionUri, (err, db) => {
     db.db(d).collection(c).find(q.param).skip(skip).limit(limit).toArray(resp);
   });
 
+  nq.on('$read', null, null, q => {
+    if (!auth()) return;
+    let d = q.namespace.shift();
+    let c = q.namespace.join('.');
+
+    c = c ? `${c}.${q.name}` : q.name;
+
+    let skip = 0;
+
+    if (typeof q.param.$skip !== 'undefined') {
+      skip = q.param.$skip;
+      delete q.param.$skip;
+    }
+
+    db.db(d).collection(c).findOne(q.param, resp);
+  });
+
   nq.on('update', null, null, q => {
     if (!auth()) return;
     let d = q.namespace.shift();
@@ -145,21 +160,23 @@ MongoClient.connect(connectionUri, (err, db) => {
 
     c = c ? `${c}.${q.name}` : q.name;
 
-    if (typeof q.param.q === 'undefined') return resp(400);
-    if (typeof q.param.d === 'undefined') return resp(400);
-
-    let one = 0;
-    if (typeof q.param.$one !== 'undefined') {
-      one = q.param.$one;
-      delete q.param.$one;
-    }
-
-    if (one === 1) {
-      db.db(d).collection(c).updateOne(q.param.q, q.param.d, resp);
-      return;
-    }
+    if (!(q.param instanceof Array)) return resp(400);
+    if (q.param.length !== 2) return resp(400);
 
     db.db(d).collection(c).updateMany(q.param.q, q.param.d, resp);
+  });
+
+  nq.on('$update', null, null, q => {
+    if (!auth()) return;
+    let d = q.namespace.shift();
+    let c = q.namespace.join('.');
+
+    c = c ? `${c}.${q.name}` : q.name;
+
+    if (!(q.param instanceof Array)) return resp(400);
+    if (q.param.length !== 2) return resp(400);
+
+    db.db(d).collection(c).updateOne(q.param.q, q.param.d, resp);
   });
 
   nq.on('delete', null, null, q => {
@@ -169,18 +186,17 @@ MongoClient.connect(connectionUri, (err, db) => {
 
     c = c ? `${c}.${q.name}` : q.name;
 
-    let one = 0;
-    if (typeof q.param.$one !== 'undefined') {
-      one = q.param.$one;
-      delete q.param.$one;
-    }
-
-    if (one === 1) {
-      db.db(d).collection(c).deleteOne(q.param, resp);
-      return;
-    }
-
     db.db(d).collection(c).deleteMany(q.param, resp);
+  });
+
+  nq.on('$delete', null, null, q => {
+    if (!auth()) return;
+    let d = q.namespace.shift();
+    let c = q.namespace.join('.');
+
+    c = c ? `${c}.${q.name}` : q.name;
+
+    db.db(d).collection(c).deleteOne(q.param, resp);
   });
 
   nq.use(q => {
