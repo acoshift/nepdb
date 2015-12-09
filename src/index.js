@@ -126,13 +126,19 @@ nq.on('auth', null, 'logout', q => {
 nq.on('create', null, null, q => {
   if (!auth()) return;
   let [ d, c ] = ns();
-  db.db(d).collection(c).insertMany(q.param, { w: 1 }, resp);
+  db.db(d).collection(c).insertMany(q.param, { w: 1 }, (err, r) => {
+    if (err) return resp(err);
+    resp(null, r.ops);
+  });
 });
 
 nq.on('$create', null, null, q => {
   if (!auth()) return;
   let [ d, c ] = ns();
-  db.db(d).collection(c).insertOne(q.param, { w: 1 }, resp);
+  db.db(d).collection(c).insertOne(q.param, { w: 1 }, (err, r) => {
+    if (err) return resp(err);
+    resp(null, r.ops[0]);
+  });
 });
 
 nq.on('read', null, null, q => {
