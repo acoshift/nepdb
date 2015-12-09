@@ -213,6 +213,10 @@ nq.use(() => {
   nq.res.sendStatus(405);
 });
 
+nq.error(() => {
+  nq.res.sendStatus(400);
+})
+
 app.use(nq.bodyParser());
 
 app.use((req, res) => {
