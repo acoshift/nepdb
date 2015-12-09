@@ -9,8 +9,8 @@ import uuid from 'node-uuid';
 import config from './config';
 
 var connectionUri = (() => {
-  let { user, pwd, host, port, db } = config.database;
-  return `mongodb://${(user && pwd) ? `${user}:${escape(pwd)}@` : ''}${host || 'localhost'}:${port || 27017}/${db || 'nepdb'}`;
+  let { user, pwd, host, port, maxPoolSize } = config.database;
+  return `mongodb://${(user && pwd) ? `${user}:${escape(pwd)}@` : ''}${host || 'localhost'}:${port || 27017}/?maxPoolSize=${maxPoolSize}`;
 })();
 
 function objectId(id) {
