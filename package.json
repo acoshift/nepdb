@@ -15,7 +15,7 @@
     "rest"
   ],
   "author": "Thanatat Tamtan <acoshift@gmail.com>",
-  "license": "ISC",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/acoshift/nepdb/issues"
   },
