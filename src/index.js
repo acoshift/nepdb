@@ -162,20 +162,28 @@ nq.on('update', null, null, q => {
   if (!auth()) return;
   let [ d, c ] = ns();
 
-  if (!(q.param instanceof Array)) return resp(400);
-  if (q.param.length !== 2) return resp(400);
+  if (!(q.param instanceof Array) || q.param.length !== 2) {
+    return nq.res.status(400).json({
+      name: 'NepQError',
+      message: 'Bad Request'
+    });
+  }
 
-  db.db(d).collection(c).updateMany(q.param.q, q.param.d, resp);
+  db.db(d).collection(c).updateMany(q.param[0], q.param[1], resp);
 });
 
 nq.on('$update', null, null, q => {
   if (!auth()) return;
   let [ d, c ] = ns();
 
-  if (!(q.param instanceof Array)) return resp(400);
-  if (q.param.length !== 2) return resp(400);
+  if (!(q.param instanceof Array) || q.param.length !== 2) {
+    return nq.res.status(400).json({
+      name: 'NepQError',
+      message: 'Bad Request'
+    });
+  }
 
-  db.db(d).collection(c).updateOne(q.param.q, q.param.d, resp);
+  db.db(d).collection(c).updateOne(q.param[0], q.param[1], resp);
 });
 
 nq.on('delete', null, null, q => {
