@@ -23,10 +23,9 @@
   "dependencies": {
     "body-parser": "^1.14.1",
     "express": "^4.13.3",
-    "kerberos": "0.0.17",
     "method-override": "^2.3.5",
     "mongodb": "^2.0.48",
-    "nepq": "^1.0.1",
+    "nepq": "^1.0.4",
     "node-uuid": "^1.4.7"
   },
   "devDependencies": {

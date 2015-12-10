@@ -145,32 +145,21 @@ nq.on('read', null, null, q => {
   if (!auth()) return;
   let [ d, c ] = ns();
 
-  let limit = 0,
-    skip = 0;
+  let opt = {};
+  
+  if (q.param.length >= 2) opt = q.param[1];
 
-  if (typeof q.param.$limit !== 'undefined') {
-    limit = q.param.$limit;
-    delete q.param.$limit;
+  opt = {
+    limit: opt.limit || 0,
+    skip: opt.skip || 0
   }
 
-  if (typeof q.param.$skip !== 'undefined') {
-    skip = q.param.$skip;
-    delete q.param.$skip;
-  }
-
-  db.db(d).collection(c).find(q.param).skip(skip).limit(limit).toArray(resp);
+  db.db(d).collection(c).find(q.param[0]).skip(opt.skip).limit(opt.limit).toArray(resp);
 });
 
 nq.on('$read', null, null, q => {
   if (!auth()) return;
   let [ d, c ] = ns();
-
-  let skip = 0;
-
-  if (typeof q.param.$skip !== 'undefined') {
-    skip = q.param.$skip;
-    delete q.param.$skip;
-  }
 
   db.db(d).collection(c).findOne(q.param, resp);
 });
