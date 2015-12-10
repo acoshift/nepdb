@@ -210,15 +210,24 @@ nq.on('$delete', null, null, q => {
 });
 
 nq.use(() => {
-  nq.res.sendStatus(405);
+  nq.res.status(405).json({
+    name: 'NepDB',
+    message: 'Method Not Allowed'
+  });
 });
 
 nq.error(() => {
-  nq.res.sendStatus(400);
+  nq.res.status(400).json({
+    name: 'NepQError',
+    message: 'Bad Request'
+  });
 })
 
 app.use(nq.bodyParser());
 
 app.use((req, res) => {
-  res.sendStatus(406);
+  res.status(406).json({
+    name: 'NepDB',
+    message: 'Not Acceptable'
+  });
 });
