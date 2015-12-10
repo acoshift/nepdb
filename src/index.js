@@ -126,19 +126,13 @@ nq.on('auth', null, 'logout', q => {
 nq.on('create', null, null, q => {
   if (!auth()) return;
   let [ d, c ] = ns();
-  db.db(d).collection(c).insertMany(q.param, { w: 1 }, (err, r) => {
-    if (err) return resp(err);
-    resp(null, r.ops);
-  });
+  db.db(d).collection(c).insertMany(q.param, { w: 1 }, resp);
 });
 
 nq.on('$create', null, null, q => {
   if (!auth()) return;
   let [ d, c ] = ns();
-  db.db(d).collection(c).insertOne(q.param, { w: 1 }, (err, r) => {
-    if (err) return resp(err);
-    resp(null, r.ops[0]);
-  });
+  db.db(d).collection(c).insertOne(q.param, { w: 1 }, resp);
 });
 
 nq.on('read', null, null, q => {
@@ -146,7 +140,7 @@ nq.on('read', null, null, q => {
   let [ d, c ] = ns();
 
   let opt = {};
-  
+
   if (q.param.length >= 2) opt = q.param[1];
 
   opt = {
@@ -188,14 +182,14 @@ nq.on('delete', null, null, q => {
   if (!auth()) return;
   let [ d, c ] = ns();
 
-  db.db(d).collection(c).deleteMany(q.param, resp);
+  db.db(d).collection(c).deleteMany(q.param, { w: 1 }, resp);
 });
 
 nq.on('$delete', null, null, q => {
   if (!auth()) return;
   let [ d, c ] = ns();
 
-  db.db(d).collection(c).deleteOne(q.param, resp);
+  db.db(d).collection(c).deleteOne(q.param, { w: 1 }, resp);
 });
 
 nq.use(() => {
