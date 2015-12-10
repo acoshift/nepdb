@@ -7,6 +7,9 @@
     "port": 27017,
     "maxPoolSize": 200
   },
+  "compression": {
+    "level": 9
+  },
   "auth": {
     "expire": {
       "time": 122,

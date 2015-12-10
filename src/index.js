@@ -6,6 +6,7 @@ import { MongoClient, ObjectID } from 'mongodb';
 import { escape } from 'querystring';
 import nepq from 'nepq';
 import uuid from 'node-uuid';
+import compression from 'compression';
 import config from './config';
 
 var connectionUri = (() => {
@@ -52,6 +53,11 @@ interface Role {
 */
 
 var app = express();
+
+app.use(compression(config.compression));
+
+app.set('x-powered-by', false);
+
 var db;
 
 MongoClient.connect(connectionUri, (err, database) => {
