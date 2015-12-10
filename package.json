@@ -25,7 +25,7 @@
     "express": "^4.13.3",
     "method-override": "^2.3.5",
     "mongodb": "^2.0.48",
-    "nepq": "^1.0.4",
+    "nepq": "^1.0.5",
     "node-uuid": "^1.4.7"
   },
   "devDependencies": {
