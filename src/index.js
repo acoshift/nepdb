@@ -139,16 +139,20 @@ nq.on('read', null, null, q => {
   if (!auth()) return;
   let [ d, c ] = ns();
 
+  let x = q.param;
   let opt = {};
 
-  if (q.param.length >= 2) opt = q.param[1];
+  if (q.param.length >= 2) {
+    x = q.param[0];
+    opt = q.param[1];
+  }
 
   opt = {
     limit: opt.limit || 0,
     skip: opt.skip || 0
   }
 
-  db.db(d).collection(c).find(q.param[0]).skip(opt.skip).limit(opt.limit).toArray(resp);
+  db.db(d).collection(c).find(x).skip(opt.skip).limit(opt.limit).toArray(resp);
 });
 
 nq.on('$read', null, null, q => {
