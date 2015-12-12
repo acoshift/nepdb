@@ -5,7 +5,6 @@ import http from 'http';
 import { MongoClient, ObjectID } from 'mongodb';
 import { escape } from 'querystring';
 import nepq from 'nepq';
-import uuid from 'node-uuid';
 import compression from 'compression';
 import jwt from 'jsonwebtoken';
 import config from './config';
