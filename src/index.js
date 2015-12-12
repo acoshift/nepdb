@@ -58,16 +58,15 @@ MongoClient.connect(connectionUri, (err, database) => {
 
 var nq = nepq();
 
-function resp(err, r) {
+function resp(q, err, r) {
   if (err) {
-    nq.res.status(520).json(err);
+    this.status(520).json(err);
   } else {
-    nq.send(r);
+    this.json(q.response(r));
   }
 }
 
-function ns() {
-  let q = nq.request;
+function ns(q) {
   let d = q.namespace.shift();
   let c = q.namespace.join('.');
   c = c ? `${c}.${q.name}` : q.name;
@@ -85,26 +84,26 @@ function makeToken(user) {
   });
 }
 
-function reject(res) {
-  res.status(401).json({
+function reject() {
+  this.status(401).json({
     name: 'NepDBError',
     message: 'Unauthorized'
   });
 }
 
 function auth(req, res, next) {
-  if (!req.headers['authorization']) return reject(res);
+  if (!req.headers['authorization']) return reject.bind(res)();
   let [method, token] = req.headers['authorization'].split(' ');
-  if (method !== 'Bearer') return reject(res);
+  if (method !== 'Bearer') return reject.bind(res)();
   let user;
   try {
     user = jwt.verify(token, config.secret);
     if (!user || !user.user || !user.pwd || !user.exp || !user.ns) throw new Error();
-  } catch (e) { return reject(res); }
+  } catch (e) { return reject.bind(res)(); }
   db.db(user.ns).collection('user').findOne({
     user: user.user, pwd: user.pwd
   }, (err, r) => {
-    if (err || !r) return reject(res);
+    if (err || !r) return reject.bind(res)();
 
     let q = nq.request;
     // TODO: check method and db name with user's roles
@@ -114,46 +113,43 @@ function auth(req, res, next) {
   });
 }
 
-nq.on('login', '', null, q => {
+nq.on('login', '', null, (q, req, res) => {
   if (!q.name ||
       !q.param.user ||
       !q.param.pwd ||
       typeof q.param.user !== 'string' ||
-      typeof q.param.pwd !== 'string') return reject(nq.res);
+      typeof q.param.pwd !== 'string') return reject.bind(res)();
 
   db.db(q.name).collection('user').findOne({
     user: q.param.user, pwd: q.param.pwd
   }, (err, r) => {
-    if (err || !r) return reject(nq.res);
+    if (err || !r) return reject.bind(res)();
     let user = {
       user: r.user,
       pwd: r.pwd,
       ns: q.name
     }
-    nq.send({ token: makeToken(user) });
+    res.json(q.response({ token: makeToken(user) }));
   });
 });
 
-nq.on('refresh', '', '', () => {
-  setTimeout(() => {
-    if (!nq.req.user) return reject(nq.res);
-  nq.send({token: makeToken(nq.req.user)});
-  }, 7000);
-
+nq.on('refresh', '', '', (q, req, res) => {
+  if (!req.user) return reject(res);
+  res.json(q.response({token: makeToken(req.user)}));
 });
 
-nq.on('create', null, null, q => {
-  let [ d, c ] = ns();
-  db.db(d).collection(c).insertMany(q.param, { w: 1 }, resp);
+nq.on('create', null, null, (q, req, res) => {
+  let [ d, c ] = ns(q);
+  db.db(d).collection(c).insertMany(q.param, { w: 1 }, resp.bind(res, q));
 });
 
-nq.on('$create', null, null, q => {
-  let [ d, c ] = ns();
-  db.db(d).collection(c).insertOne(q.param, { w: 1 }, resp);
+nq.on('$create', null, null, (q, req, res) => {
+  let [ d, c ] = ns(q);
+  db.db(d).collection(c).insertOne(q.param, { w: 1 }, resp.bind(res, q));
 });
 
-nq.on('read', null, null, q => {
-  let [ d, c ] = ns();
+nq.on('read', null, null, (q, req, res) => {
+  let [ d, c ] = ns(q);
 
   let x = q.param;
   let opt = {};
@@ -168,62 +164,55 @@ nq.on('read', null, null, q => {
     skip: opt.skip || 0
   }
 
-  db.db(d).collection(c).find(x).skip(opt.skip).limit(opt.limit).toArray(resp);
+  db.db(d).collection(c).find(x).skip(opt.skip).limit(opt.limit).toArray(resp.bind(res, q));
 });
 
-nq.on('$read', null, null, q => {
-  let [ d, c ] = ns();
-
-  db.db(d).collection(c).findOne(q.param, resp);
+nq.on('$read', null, null, (q, req, res) => {
+  let [ d, c ] = ns(q);
+  db.db(d).collection(c).findOne(q.param, resp.bind(res, q));
 });
 
-nq.on('update', null, null, q => {
-  let [ d, c ] = ns();
-
+nq.on('update', null, null, (q, req, res) => {
+  let [ d, c ] = ns(q);
   if (!(q.param instanceof Array) || q.param.length !== 2) {
-    return nq.res.status(400).json({
+    return res.status(400).json({
       name: 'NepQError',
       message: 'Bad Request'
     });
   }
-
-  db.db(d).collection(c).updateMany(q.param[0], q.param[1], resp);
+  db.db(d).collection(c).updateMany(q.param[0], q.param[1], resp.bind(res, q));
 });
 
-nq.on('$update', null, null, q => {
-  let [ d, c ] = ns();
-
+nq.on('$update', null, null, (q, req, res) => {
+  let [ d, c ] = ns(q);
   if (!(q.param instanceof Array) || q.param.length !== 2) {
-    return nq.res.status(400).json({
+    return res.status(400).json({
       name: 'NepQError',
       message: 'Bad Request'
     });
   }
-
-  db.db(d).collection(c).updateOne(q.param[0], q.param[1], resp);
+  db.db(d).collection(c).updateOne(q.param[0], q.param[1], resp.bind(res, q));
 });
 
-nq.on('delete', null, null, q => {
-  let [ d, c ] = ns();
-
-  db.db(d).collection(c).deleteMany(q.param, { w: 1 }, resp);
+nq.on('delete', null, null, (q, req, res) => {
+  let [ d, c ] = ns(q);
+  db.db(d).collection(c).deleteMany(q.param, { w: 1 }, resp.bind(res, q));
 });
 
-nq.on('$delete', null, null, q => {
-  let [ d, c ] = ns();
-
-  db.db(d).collection(c).deleteOne(q.param, { w: 1 }, resp);
+nq.on('$delete', null, null, (q, req, res) => {
+  let [ d, c ] = ns(q);
+  db.db(d).collection(c).deleteOne(q.param, { w: 1 }, resp.bind(res, q));
 });
 
-nq.use(() => {
-  nq.res.status(501).json({
+nq.use((q, req, res) => {
+  res.status(501).json({
     name: 'NepDB',
     message: 'Not Implemented'
   });
 });
 
-nq.error(() => {
-  nq.res.status(400).json({
+nq.error((req, res) => {
+  res.status(400).json({
     name: 'NepQError',
     message: 'Bad Request'
   });
@@ -233,7 +222,7 @@ app.use((req, res, next) => {
   // TODO: config CORS from database
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  if (req.method === 'OPTIONS') return res.status(204).end();
+  if (req.method === 'OPTIONS') return res.sendStatus(204);
   next();
 });
 
