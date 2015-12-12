@@ -211,9 +211,9 @@ nq.on('$delete', null, null, q => {
 });
 
 nq.use(() => {
-  nq.res.status(405).json({
+  nq.res.status(501).json({
     name: 'NepDB',
-    message: 'Method Not Allowed'
+    message: 'Not Implemented'
   });
 });
 
@@ -224,11 +224,18 @@ nq.error(() => {
   });
 })
 
+app.use((req, res, next) => {
+  // TODO: config CORS from database
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  if (req.method === 'OPTIONS') res.status(204).end();
+});
+
 app.use(nq.bodyParser());
 
 app.use((req, res) => {
-  res.status(406).json({
+  res.status(400).json({
     name: 'NepDB',
-    message: 'Not Acceptable'
+    message: 'Bad Request'
   });
 });
