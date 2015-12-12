@@ -97,7 +97,13 @@ function auth() {
 }
 
 nq.on('auth', null, 'login', q => {
-  console.log(q);
+  let [ d, c ] = ns();
+  nq.send({token: "1234"});
+  /*nq.res.status(401).json({
+    name: 'NepDB',
+    message: 'Unauthorized'
+  });*/
+  /*
   let _db = q.namespace.shift();
   db.db(_db).collection('nepq.user').findOne({
     username: q.param.username,
@@ -117,7 +123,7 @@ nq.on('auth', null, 'login', q => {
       if (err) return resp(500);
       nq.response({ token: token });
     });
-  });
+  });*/
 });
 
 function extendTime(token) {
@@ -125,8 +131,8 @@ function extendTime(token) {
 }
 
 nq.on('auth', null, 'logout', q => {
-  let _db = q.namespace.shift();
-
+  let [ d, c ] = ns();
+  nq.send();
 });
 
 nq.on('create', null, null, q => {
