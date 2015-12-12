@@ -7,7 +7,14 @@ import { escape } from 'querystring';
 import nepq from 'nepq';
 import uuid from 'node-uuid';
 import compression from 'compression';
+import jwt from 'jsonwebtoken';
 import config from './config';
+
+function decode(base64) {
+  return base64 ? new Buffer(base64, 'base64').toString() : null;
+}
+
+config.secret = decode(config.secret);
 
 var connectionUri = (() => {
   let { user, pwd, host, port, maxPoolSize } = config.database;
@@ -29,28 +36,6 @@ function json(s) {
   } catch (e) { }
   return r;
 }
-/*
-interface User {
-  _id: mongodb.ObjectID;
-  username: string;
-  password: string;
-  role: mongodb.ObjectID;
-}
-
-interface Token {
-  _id: mongodb.ObjectID;
-  token: string;
-  user: mongodb.ObjectID;
-  timestamp: number;
-  expire: number;
-}
-
-interface Role {
-  _id: mongodb.ObjectID;
-  name: string;
-  auth: any;
-}
-*/
 
 var app = express();
 
@@ -91,14 +76,28 @@ function ns() {
 }
 
 function auth() {
+  let token = nq.req.headers['authorization'];
+  let user = jwt.verify(token, config.secret, { issuer: 'nepdb' });
   let q = nq.request;
-  // TODO: auth logic
+
+  // TODO: check username and pwd with database
+  // TODO: check method and db name with user's roles
+
   return true;
 }
 
 nq.on('auth', null, 'login', q => {
   let [ d, c ] = ns();
-  nq.send({token: "1234"});
+  // TODO: find user on db
+  let user = {
+    user: 'test',
+    pwd: '1234'
+  };
+  let token = jwt.sign(user, config.secret, {
+    algorithm: 'HS256',
+    issuer: 'nepdb'
+  });
+  nq.send({token: token});
   /*nq.res.status(401).json({
     name: 'NepDB',
     message: 'Unauthorized'
