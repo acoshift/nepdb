@@ -21,11 +21,12 @@
   },
   "homepage": "https://github.com/acoshift/nepdb#readme",
   "dependencies": {
+    "bcryptjs": "^2.3.0",
     "compression": "^1.6.0",
     "express": "^4.13.3",
     "jsonwebtoken": "^5.4.1",
     "mongodb": "^2.0.48",
-    "nepq": "^2.0.0"
+    "nepq": "^2.1.0"
   },
   "devDependencies": {
     "babel-preset-es2015": "^6.3.13",
