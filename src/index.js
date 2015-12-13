@@ -7,6 +7,8 @@ import { escape } from 'querystring';
 import nepq from 'nepq';
 import compression from 'compression';
 import jwt from 'jsonwebtoken';
+import bcrypt from 'bcryptjs';
+import _ from 'lodash';
 import config from './config';
 
 function decode(base64) {
@@ -92,6 +94,28 @@ function resp(res, q, err, r) {
   }
 }
 
+function calc(k, v) {
+  switch (k) {
+    case '$$bcrypt':
+      return bcrypt.hashSync(v, bcrypt.genSaltSync(10));
+  }
+  return null;
+}
+
+function preprocess(q) {
+  // TODO: calculate func in q
+  _.forOwn(q.param, (v, k, a) => {
+    if (k.startsWith('$$')) {
+      _.forOwn(v, (_v, _k, _a) => {
+        a[_k] = calc(k, _v);
+      });
+      delete a[k];
+    }
+  });
+}
+
+nq.parser.on('after', preprocess);
+
 function auth(req, res, next) {
   if (!req.headers['authorization']) return reject(res);
   let [method, token] = req.headers['authorization'].split(' ');
@@ -102,9 +126,9 @@ function auth(req, res, next) {
     if (!user || !user.user || !user.pwd || !user.exp || !user.ns) throw new Error();
   } catch (e) { return reject(res); }
   db.db(user.ns).collection('user').findOne({
-    user: user.user, pwd: user.pwd
+    user: user.user
   }, (err, r) => {
-    if (err || !r) return reject(res);
+    if (err || !r || !r.pwd || !bcrypt.compareSync(user.pwd, r.pwd)) return reject(res);
 
     let q = nq.request;
     // TODO: check method and db name with user's roles
@@ -122,12 +146,12 @@ nq.on('login', '', null, (q, req, res) => {
       typeof q.param.pwd !== 'string') return reject(res);
 
   db.db(q.name).collection('user').findOne({
-    user: q.param.user, pwd: q.param.pwd
+    user: q.param.user
   }, (err, r) => {
-    if (err || !r) return reject(res);
+    if (err || !r || !r.pwd || !bcrypt.compareSync(q.param.pwd, r.pwd)) return reject(res);
     let user = {
-      user: r.user,
-      pwd: r.pwd,
+      user: q.param.user,
+      pwd: q.param.pwd,
       ns: q.name
     }
     res.json(q.response({ token: makeToken(user) }));
