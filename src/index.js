@@ -103,18 +103,19 @@ function calc(k, v) {
 }
 
 function preprocess(q) {
-  // TODO: calculate func in q
-  _.forOwn(q.param, (v, k, a) => {
+  _.forOwn(q, (v, k, a) => {
     if (k.startsWith('$$')) {
       _.forOwn(v, (_v, _k, _a) => {
         a[_k] = calc(k, _v);
       });
       delete a[k];
+    } else if (typeof v === 'object') {
+      preprocess(v);
     }
   });
 }
 
-nq.parser.on('after', preprocess);
+nq.parser.on('after', (q) => preprocess(q.param));
 
 function auth(req, res, next) {
   if (!req.headers['authorization']) return reject(res);
