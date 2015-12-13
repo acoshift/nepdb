@@ -117,52 +117,71 @@ function preprocess(q) {
 
 nq.parser.on('after', (q) => preprocess(q.param));
 
-function auth(req, res, next) {
-  if (!req.headers['authorization']) return reject(res);
+function authToken(req) {
+  if (!req.headers['authorization']) return null;
   let [method, token] = req.headers['authorization'].split(' ');
-  if (method !== 'Bearer') return reject(res);
+  if (method !== 'Bearer') return null;
+  return token;
+}
+
+function auth(req, res, next) {
+  let token = authToken(req);
   let user;
   try {
     user = jwt.verify(token, config.secret);
-    if (!user || !user.user || !user.pwd || !user.exp || !user.ns) throw new Error();
+    if (!user || !user.user || !user.ns) throw new Error();
   } catch (e) { return reject(res); }
-  db.db(user.ns).collection('user').findOne({
+
+  let q = nq.request;
+  // TODO: check method and db name with user's roles
+  /*db.db(user.ns).collection('user').findOne({
     user: user.user
   }, (err, r) => {
     if (err || !r || !r.pwd || !bcrypt.compareSync(user.pwd, r.pwd)) return reject(res);
 
-    let q = nq.request;
-    // TODO: check method and db name with user's roles
 
-    req.user = user;
-    next();
+  });*/
+
+  req.user = user;
+  next();
+}
+
+function login(ns, user, pwd, cb) {
+  if (!ns ||
+      !user ||
+      !pwd ||
+      typeof user !== 'string' ||
+      typeof pwd !== 'string') return cb(null);
+
+  db.db(ns).collection('user').findOne({
+    user: user
+  }, (err, r) => {
+    if (err || !r || !r.pwd || !bcrypt.compareSync(pwd, r.pwd)) return cb(null);
+    let profile = {
+      user: user,
+      pwd: pwd,
+      ns: ns
+    };
+    cb({ token: makeToken(profile) });
   });
 }
 
 nq.on('login', '', null, (q, req, res) => {
-  if (!q.name ||
-      !q.param.user ||
-      !q.param.pwd ||
-      typeof q.param.user !== 'string' ||
-      typeof q.param.pwd !== 'string') return reject(res);
-
-  db.db(q.name).collection('user').findOne({
-    user: q.param.user
-  }, (err, r) => {
-    if (err || !r || !r.pwd || !bcrypt.compareSync(q.param.pwd, r.pwd)) return reject(res);
-    let user = {
-      user: q.param.user,
-      pwd: q.param.pwd,
-      ns: q.name
-    }
-    res.json(q.response({ token: makeToken(user) }));
+  login(q.name, q.param.user, q.param.pwd, (r) => {
+    if (!r) reject(res);
+    res.json(q.response(r));
   });
 });
 
 nq.on('refresh', '', '', (q, req, res) => {
-  auth(req, res, () => {
-    if (!req.user) return reject(res);
-    res.json(q.response({token: makeToken(req.user)}));
+  let token = authToken(req);
+  let user;
+  try {
+    user = jwt.decode(token, config.secret);
+    if (!user || !user.user || !user.ns) throw new Error();
+  } catch(e) { return reject(res); }
+  login(user.ns, user.user, user.pwd, (r) => {
+    res.json(q.response(r));
   });
 });
 
