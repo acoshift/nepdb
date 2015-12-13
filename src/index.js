@@ -134,74 +134,92 @@ nq.on('login', '', null, (q, req, res) => {
 });
 
 nq.on('refresh', '', '', (q, req, res) => {
-  if (!req.user) return reject(res);
-  res.json(q.response({token: makeToken(req.user)}));
+  auth(req, res, () => {
+    if (!req.user) return reject(res);
+    res.json(q.response({token: makeToken(req.user)}));
+  });
 });
 
 nq.on('create', null, null, (q, req, res) => {
-  let [ d, c ] = ns(q);
-  db.db(d).collection(c).insertMany(q.param, { w: 1 }, resp.bind(res, q));
+  auth(req, res, () => {
+    let [ d, c ] = ns(q);
+    db.db(d).collection(c).insertMany(q.param, { w: 1 }, resp.bind(res, q));
+  });
 });
 
 nq.on('$create', null, null, (q, req, res) => {
-  let [ d, c ] = ns(q);
-  db.db(d).collection(c).insertOne(q.param, { w: 1 }, resp.bind(res, q));
+  auth(req, res, () => {
+    let [ d, c ] = ns(q);
+    db.db(d).collection(c).insertOne(q.param, { w: 1 }, resp.bind(res, q));
+  });
 });
 
 nq.on('read', null, null, (q, req, res) => {
-  let [ d, c ] = ns(q);
+  auth(req, res, () => {
+    let [ d, c ] = ns(q);
 
-  let x = q.param;
-  let opt = {};
+    let x = q.param;
+    let opt = {};
 
-  if (q.param.length >= 2) {
-    x = q.param[0];
-    opt = q.param[1];
-  }
+    if (q.param.length >= 2) {
+      x = q.param[0];
+      opt = q.param[1];
+    }
 
-  opt = {
-    limit: opt.limit || 0,
-    skip: opt.skip || 0
-  }
+    opt = {
+      limit: opt.limit || 0,
+      skip: opt.skip || 0
+    }
 
-  db.db(d).collection(c).find(x).skip(opt.skip).limit(opt.limit).toArray(resp.bind(res, q));
+    db.db(d).collection(c).find(x).skip(opt.skip).limit(opt.limit).toArray(resp.bind(res, q));
+  });
 });
 
 nq.on('$read', null, null, (q, req, res) => {
-  let [ d, c ] = ns(q);
-  db.db(d).collection(c).findOne(q.param, resp.bind(res, q));
+  auth(req, res, () => {
+    let [ d, c ] = ns(q);
+    db.db(d).collection(c).findOne(q.param, resp.bind(res, q));
+  });
 });
 
 nq.on('update', null, null, (q, req, res) => {
-  let [ d, c ] = ns(q);
-  if (!(q.param instanceof Array) || q.param.length !== 2) {
-    return res.status(400).json({
-      name: 'NepQError',
-      message: 'Bad Request'
-    });
-  }
-  db.db(d).collection(c).updateMany(q.param[0], q.param[1], resp.bind(res, q));
+  auth(req, res, () => {
+    let [ d, c ] = ns(q);
+    if (!(q.param instanceof Array) || q.param.length !== 2) {
+      return res.status(400).json({
+        name: 'NepQError',
+        message: 'Bad Request'
+      });
+    }
+    db.db(d).collection(c).updateMany(q.param[0], q.param[1], resp.bind(res, q));
+  });
 });
 
 nq.on('$update', null, null, (q, req, res) => {
-  let [ d, c ] = ns(q);
-  if (!(q.param instanceof Array) || q.param.length !== 2) {
-    return res.status(400).json({
-      name: 'NepQError',
-      message: 'Bad Request'
-    });
-  }
-  db.db(d).collection(c).updateOne(q.param[0], q.param[1], resp.bind(res, q));
+  auth(req, res, () => {
+    let [ d, c ] = ns(q);
+    if (!(q.param instanceof Array) || q.param.length !== 2) {
+      return res.status(400).json({
+        name: 'NepQError',
+        message: 'Bad Request'
+      });
+    }
+    db.db(d).collection(c).updateOne(q.param[0], q.param[1], resp.bind(res, q));
+  });
 });
 
 nq.on('delete', null, null, (q, req, res) => {
-  let [ d, c ] = ns(q);
-  db.db(d).collection(c).deleteMany(q.param, { w: 1 }, resp.bind(res, q));
+  auth(req, res, () => {
+    let [ d, c ] = ns(q);
+    db.db(d).collection(c).deleteMany(q.param, { w: 1 }, resp.bind(res, q));
+  });
 });
 
 nq.on('$delete', null, null, (q, req, res) => {
-  let [ d, c ] = ns(q);
-  db.db(d).collection(c).deleteOne(q.param, { w: 1 }, resp.bind(res, q));
+  auth(req, res, () => {
+    let [ d, c ] = ns(q);
+    db.db(d).collection(c).deleteOne(q.param, { w: 1 }, resp.bind(res, q));
+  });
 });
 
 nq.use((q, req, res) => {
@@ -225,8 +243,6 @@ app.use((req, res, next) => {
   if (req.method === 'OPTIONS') return res.sendStatus(204);
   next();
 });
-
-app.use(auth);
 
 app.use(nq.bodyParser());
 
