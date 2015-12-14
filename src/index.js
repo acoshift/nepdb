@@ -9,6 +9,8 @@ import compression from 'compression';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import _ from 'lodash';
+import moment from 'moment';
+import etag from 'etag';
 import config from './config';
 
 function decode(base64) {
@@ -115,11 +117,28 @@ function preprocess(q) {
   });
 }
 
-nq.parser.on('after', (q) => preprocess(q.param));
+nq.parser.on('after', q => {
+  // TODO: log here
+  preprocess(q.param);
+});
+
+function now() {
+  return moment.utc().format("YYYY-MM-DDTHH:mm:ss.SSSZ");
+}
+
+function log(db, ns, user, query, result) {
+  let d = {
+    db: db,
+    ns: ns,
+    user: user.user,
+    query: query,
+    time: now()
+  };
+}
 
 function authToken(req) {
-  if (!req.headers['authorization']) return null;
-  let [method, token] = req.headers['authorization'].split(' ');
+  if (!req.headers.authorization) return null;
+  let [method, token] = req.headers.authorization.split(' ');
   if (method !== 'Bearer') return null;
   return token;
 }
@@ -214,7 +233,7 @@ nq.on('read', null, null, (q, req, res) => {
     opt = {
       limit: opt.limit || 0,
       skip: opt.skip || 0
-    }
+    };
 
     db.db(d).collection(c).find(x).skip(opt.skip).limit(opt.limit).toArray(resp.bind(this, res, q));
   });
