@@ -11,6 +11,7 @@ import bcrypt from 'bcryptjs';
 import _ from 'lodash';
 import moment from 'moment';
 import etag from 'etag';
+import fresh from 'fresh';
 import config from './config';
 
 function decode(base64) {
@@ -45,6 +46,8 @@ var app = express();
 app.use(compression(config.compression));
 
 app.set('x-powered-by', false);
+
+app.set('etag', 'strong');
 
 var db;
 
@@ -88,11 +91,16 @@ function reject(res) {
   error(res, 'NepDBError', 'Unauthorized');
 }
 
-function resp(res, q, err, r) {
+function resp(req, res, q, err, r) {
   if (err) {
     error(res, err.name, err.message);
   } else {
-    res.json(q.response(r));
+    let response = q.response(r);
+    if (fresh(req.headers, { etag: etag(JSON.stringify(response)) })) {
+      res.sendStatus(304);
+      return;
+    }
+    res.json(response);
   }
 }
 
@@ -207,14 +215,14 @@ nq.on('refresh', '', (q, req, res) => {
 nq.on('create', null, (q, req, res) => {
   auth(req, res, () => {
     let [ d, c ] = ns(q);
-    db.db(d).collection(c).insertMany(q.params, { w: 1 }, resp.bind(this, res, q));
+    db.db(d).collection(c).insertMany(q.params, { w: 1 }, resp.bind(this, req, res, q));
   });
 });
 
 nq.on('$create', null, (q, req, res) => {
   auth(req, res, () => {
     let [ d, c ] = ns(q);
-    db.db(d).collection(c).insertOne(q.params, { w: 1 }, resp.bind(this, res, q));
+    db.db(d).collection(c).insertOne(q.params, { w: 1 }, resp.bind(this, req, res, q));
   });
 });
 
@@ -235,14 +243,14 @@ nq.on('read', null, (q, req, res) => {
       skip: opt.skip || 0
     };
 
-    db.db(d).collection(c).find(x).skip(opt.skip).limit(opt.limit).toArray(resp.bind(this, res, q));
+    db.db(d).collection(c).find(x).skip(opt.skip).limit(opt.limit).toArray(resp.bind(this, req, res, q));
   });
 });
 
 nq.on('$read', null, (q, req, res) => {
   auth(req, res, () => {
     let [ d, c ] = ns(q);
-    db.db(d).collection(c).findOne(q.params, resp.bind(this, res, q));
+    db.db(d).collection(c).findOne(q.params, resp.bind(this, req, res, q));
   });
 });
 
@@ -252,7 +260,7 @@ nq.on('update', null, (q, req, res) => {
     if (!(q.params instanceof Array) || q.params.length !== 2) {
       return error(res, 'NepQ', 'Bad Request');
     }
-    db.db(d).collection(c).updateMany(q.params[0], q.params[1], resp.bind(this, res, q));
+    db.db(d).collection(c).updateMany(q.params[0], q.params[1], resp.bind(this, req, res, q));
   });
 });
 
@@ -262,21 +270,21 @@ nq.on('$update', null, (q, req, res) => {
     if (!(q.params instanceof Array) || q.params.length !== 2) {
       return error(res, 'NepQ', 'Bad Request');
     }
-    db.db(d).collection(c).updateOne(q.params[0], q.params[1], resp.bind(this, res, q));
+    db.db(d).collection(c).updateOne(q.params[0], q.params[1], resp.bind(this, req, res, q));
   });
 });
 
 nq.on('delete', null, (q, req, res) => {
   auth(req, res, () => {
     let [ d, c ] = ns(q);
-    db.db(d).collection(c).deleteMany(q.params, { w: 1 }, resp.bind(this, res, q));
+    db.db(d).collection(c).deleteMany(q.params, { w: 1 }, resp.bind(this, req, res, q));
   });
 });
 
 nq.on('$delete', null, (q, req, res) => {
   auth(req, res, () => {
     let [ d, c ] = ns(q);
-    db.db(d).collection(c).deleteOne(q.params, { w: 1 }, resp.bind(this, res, q));
+    db.db(d).collection(c).deleteOne(q.params, { w: 1 }, resp.bind(this, req, res, q));
   });
 });
 
