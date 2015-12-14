@@ -63,9 +63,9 @@ MongoClient.connect(connectionUri, (err, database) => {
 var nq = nepq();
 
 function ns(q) {
-  let d = q.namespace.shift();
-  let c = q.namespace.join('.');
-  c = c ? `${c}.${q.name}` : q.name;
+  let n = q.name.split('.');
+  let d = n.shift();
+  let c = n.join('.');
   return [ d, c ];
 }
 
@@ -119,7 +119,7 @@ function preprocess(q) {
 
 nq.parser.on('after', q => {
   // TODO: log here
-  preprocess(q.param);
+  preprocess(q.params);
 });
 
 function now() {
@@ -185,14 +185,14 @@ function login(ns, user, pwd, cb) {
   });
 }
 
-nq.on('login', '', null, (q, req, res) => {
-  login(q.name, q.param.user, q.param.pwd, (r) => {
+nq.on('login', null, (q, req, res) => {
+  login(q.name, q.params.user, q.params.pwd, (r) => {
     if (!r) reject(res);
     res.json(q.response(r));
   });
 });
 
-nq.on('refresh', '', '', (q, req, res) => {
+nq.on('refresh', '', (q, req, res) => {
   let token = authToken(req);
   let user;
   try {
@@ -204,30 +204,30 @@ nq.on('refresh', '', '', (q, req, res) => {
   });
 });
 
-nq.on('create', null, null, (q, req, res) => {
+nq.on('create', null, (q, req, res) => {
   auth(req, res, () => {
     let [ d, c ] = ns(q);
-    db.db(d).collection(c).insertMany(q.param, { w: 1 }, resp.bind(this, res, q));
+    db.db(d).collection(c).insertMany(q.params, { w: 1 }, resp.bind(this, res, q));
   });
 });
 
-nq.on('$create', null, null, (q, req, res) => {
+nq.on('$create', null, (q, req, res) => {
   auth(req, res, () => {
     let [ d, c ] = ns(q);
-    db.db(d).collection(c).insertOne(q.param, { w: 1 }, resp.bind(this, res, q));
+    db.db(d).collection(c).insertOne(q.params, { w: 1 }, resp.bind(this, res, q));
   });
 });
 
-nq.on('read', null, null, (q, req, res) => {
+nq.on('read', null, (q, req, res) => {
   auth(req, res, () => {
     let [ d, c ] = ns(q);
 
-    let x = q.param;
+    let x = q.params;
     let opt = {};
 
-    if (q.param.length >= 2) {
-      x = q.param[0];
-      opt = q.param[1];
+    if (q.params.length >= 2) {
+      x = q.params[0];
+      opt = q.params[1];
     }
 
     opt = {
@@ -239,44 +239,44 @@ nq.on('read', null, null, (q, req, res) => {
   });
 });
 
-nq.on('$read', null, null, (q, req, res) => {
+nq.on('$read', null, (q, req, res) => {
   auth(req, res, () => {
     let [ d, c ] = ns(q);
-    db.db(d).collection(c).findOne(q.param, resp.bind(this, res, q));
+    db.db(d).collection(c).findOne(q.params, resp.bind(this, res, q));
   });
 });
 
-nq.on('update', null, null, (q, req, res) => {
+nq.on('update', null, (q, req, res) => {
   auth(req, res, () => {
     let [ d, c ] = ns(q);
-    if (!(q.param instanceof Array) || q.param.length !== 2) {
+    if (!(q.params instanceof Array) || q.params.length !== 2) {
       return error(res, 'NepQ', 'Bad Request');
     }
-    db.db(d).collection(c).updateMany(q.param[0], q.param[1], resp.bind(this, res, q));
+    db.db(d).collection(c).updateMany(q.params[0], q.params[1], resp.bind(this, res, q));
   });
 });
 
-nq.on('$update', null, null, (q, req, res) => {
+nq.on('$update', null, (q, req, res) => {
   auth(req, res, () => {
     let [ d, c ] = ns(q);
-    if (!(q.param instanceof Array) || q.param.length !== 2) {
+    if (!(q.params instanceof Array) || q.params.length !== 2) {
       return error(res, 'NepQ', 'Bad Request');
     }
-    db.db(d).collection(c).updateOne(q.param[0], q.param[1], resp.bind(this, res, q));
+    db.db(d).collection(c).updateOne(q.params[0], q.params[1], resp.bind(this, res, q));
   });
 });
 
-nq.on('delete', null, null, (q, req, res) => {
+nq.on('delete', null, (q, req, res) => {
   auth(req, res, () => {
     let [ d, c ] = ns(q);
-    db.db(d).collection(c).deleteMany(q.param, { w: 1 }, resp.bind(this, res, q));
+    db.db(d).collection(c).deleteMany(q.params, { w: 1 }, resp.bind(this, res, q));
   });
 });
 
-nq.on('$delete', null, null, (q, req, res) => {
+nq.on('$delete', null, (q, req, res) => {
   auth(req, res, () => {
     let [ d, c ] = ns(q);
-    db.db(d).collection(c).deleteOne(q.param, { w: 1 }, resp.bind(this, res, q));
+    db.db(d).collection(c).deleteOne(q.params, { w: 1 }, resp.bind(this, res, q));
   });
 });
 
