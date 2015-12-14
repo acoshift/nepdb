@@ -30,7 +30,7 @@
     "lodash": "^3.10.1",
     "moment": "^2.10.6",
     "mongodb": "^2.1.1",
-    "nepq": "^3.0.0-alpha.0"
+    "nepq": "^3.0.0-alpha.1"
   },
   "devDependencies": {
     "babel-preset-es2015": "^6.3.13",

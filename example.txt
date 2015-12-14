@@ -11,3 +11,4 @@ create test.product([
 
 read test.product(price: { $gt: 15000 }, $limit: 3) { name }
 
+$update test.product({name: "JavaScript ebook"}, {$currentDate: {updated: true}})
