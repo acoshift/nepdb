@@ -132,11 +132,12 @@ nq.parser.on('after', q => preprocess(q.params) );
 
 function log(q, req, ...args) {
   let user = decodeToken((authToken(req)));
+  let [ d ] = ns(q);
   let l = {
     user: user ? user.user : null,
     q: q
   };
-  db.db(user.ns).collection('log').insertOne(l);
+  if (d) db.db(d).collection('log').insertOne(l);
   args.pop()();
 }
 
@@ -149,6 +150,7 @@ function authToken(req) {
 
 function auth(req, res, next) {
   let token = authToken(req);
+  if (!token) return next();
   let user;
   try {
     user = jwt.verify(token, config.secret);
@@ -177,6 +179,16 @@ function decodeToken(token) {
   return user;
 }
 
+function collection(q, cb) {
+  let [ d, c ] = ns(q);
+  let col = null;
+  db.db(d).collection(c, {
+    w: 1,
+    j: false,
+    strict: true
+  }, cb);
+}
+
 function login(ns, user, pwd, cb) {
   if (!ns ||
       !user ||
@@ -200,15 +212,15 @@ function login(ns, user, pwd, cb) {
 nq.use(log);
 
 nq.on('login', null, (q, req, res) => {
-  login(q.name, q.params.user, q.params.pwd, (r) => {
-    if (!r) reject(res);
+  login(q.name, q.params.user, q.params.pwd, r => {
+    if (!r) return reject(res);
     res.json(q.response(r));
   });
 });
 
 nq.on('refresh', '', (q, req, res) => {
   let user = decodeToken((authToken(req)));
-  if (!user) reject(res);
+  if (!user) return reject(res);
   login(user.ns, user.user, user.pwd, (r) => {
     res.json(q.response(r));
   });
@@ -217,20 +229,23 @@ nq.on('refresh', '', (q, req, res) => {
 nq.on('create', null, (q, req, res) => {
   if (!req.user) return reject(res);
   if (!(q.params instanceof Array)) return error(res, 'NepDBError', 'Parameter must be an array of object');
-  let [ d, c ] = ns(q);
-  db.db(d).collection(c).insertMany(q.params, { w: 1 }, resp.bind(this, req, res, q));
+  collection(q, (err, c) => {
+    if (err || !c) return reject(res);
+    c.insertMany(q.params, resp.bind(this, req, res, q));
+  });
 });
 
 nq.on('$create', null, (q, req, res) => {
   if (!req.user) return reject(res);
   if (q.params instanceof Array) return error(res, 'NepDBError', 'Parameter must be an object');
-  let [ d, c ] = ns(q);
-  db.db(d).collection(c).insertOne(q.params, { w: 1 }, resp.bind(this, req, res, q));
+  collection(q, (err, c) => {
+    if (err || !c) return reject(res);
+    c.insertOne(q.params, resp.bind(this, req, res, q));
+  });
 });
 
 nq.on('read', null, (q, req, res) => {
   if (!req.user) return reject(res);
-  let [ d, c ] = ns(q);
 
   let x = q.params;
   let opt = {};
@@ -245,23 +260,29 @@ nq.on('read', null, (q, req, res) => {
     skip: opt.skip || 0
   };
 
-  db.db(d).collection(c).find(x).skip(opt.skip).limit(opt.limit).toArray(resp.bind(this, req, res, q));
+  collection(q, (err, c) => {
+    if (err || !c) return reject(res);
+    c.find(x).skip(opt.skip).limit(opt.limit).toArray(resp.bind(this, req, res, q));
+  });
 });
 
 nq.on('$read', null, (q, req, res) => {
-  if (!req.user) return reject(res);
-  let [ d, c ] = ns(q);
-  db.db(d).collection(c).findOne(q.params, resp.bind(this, req, res, q));
+  if (!req.user) return reject(res);collection(q, (err, c) => {
+    if (err || !c) return reject(res);
+    c.findOne(q.params, resp.bind(this, req, res, q));
+  });
 });
 
 nq.on('update', null, (q, req, res) => {
   if (!req.user) return reject(res);
-  let [ d, c ] = ns(q);
   if (!(q.params instanceof Array) || q.params.length !== 2) {
     return error(res, 'NepQError', 'Parameter must be an array of 2 objects');
   }
   q.params[1].$currentDate = { updated: true };
-  db.db(d).collection(c).updateMany(q.params[0], q.params[1], resp.bind(this, req, res, q));
+  collection(q, (err, c) => {
+    if (err || !c) return reject(res);
+    c.updateMany(q.params[0], q.params[1], resp.bind(this, req, res, q));
+  });
 });
 
 nq.on('$update', null, (q, req, res) => {
@@ -269,21 +290,27 @@ nq.on('$update', null, (q, req, res) => {
   if (!(q.params instanceof Array) || q.params.length !== 2) {
     return error(res, 'NepDBError', 'Parameter must be an array of 2 objects');
   }
-  let [ d, c ] = ns(q);
   q.params[1].$currentDate = { updated: true };
-  db.db(d).collection(c).updateOne(q.params[0], q.params[1], resp.bind(this, req, res, q));
+  collection(q, (err, c) => {
+    if (err || !c) return reject(res);
+    c.updateOne(q.params[0], q.params[1], resp.bind(this, req, res, q));
+  });
 });
 
 nq.on('delete', null, (q, req, res) => {
   if (!req.user) return reject(res);
-  let [ d, c ] = ns(q);
-  db.db(d).collection(c).deleteMany(q.params, { w: 1 }, resp.bind(this, req, res, q));
+  collection(q, (err, c) => {
+    if (err || !c) return reject(res);
+    c.deleteMany(q.params, resp.bind(this, req, res, q));
+  });
 });
 
 nq.on('$delete', null, (q, req, res) => {
   if (!req.user) return reject(res);
-  let [ d, c ] = ns(q);
-  db.db(d).collection(c).deleteOne(q.params, { w: 1 }, resp.bind(this, req, res, q));
+  collection(q, (err, c) => {
+    if (err || !c) return reject(res);
+    c.deleteOne(q.params, resp.bind(this, req, res, q));
+  });
 });
 
 nq.use((q, req, res) => {
