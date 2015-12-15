@@ -150,9 +150,12 @@ function authToken(req) {
 
 function authen(req, res, next) {
   let token = authToken(req);
-  if (!token) return next();
-  let user;
+  let user = {
+    name: 'guest',
+    role: 'guest'
+  };
   try {
+    if (!token) throw new Error();
     user = jwt.verify(token, config.secret);
     if (!user || !user.name || !user.ns) throw new Error();
   } catch (e) { }
@@ -164,8 +167,8 @@ function autho(q, req, ...args) {
   req.autho = null;
   let user = req.user;
   let [ d ] = ns(q);
-  if (!user || !user.ns) user = { role: 'guest', ns: d };
-  db.db(user.ns).collection('db.roles').findOne({name: user.role}, (err, r) => {
+  if (!user || user.name === 'guest' || !user.ns || user.ns !== d) user = { role: 'guest', ns: d };
+  db.db(d).collection('db.roles').findOne({name: user.role}, (err, r) => {
     if (err || !r) return args.pop()();
     req.autho = r.dbs;
     args.pop()();
@@ -220,10 +223,11 @@ function login(ns, name, pwd, cb) {
 function isAuth(q, req, method) {
   if (!req.user || !req.autho) return false;
   let [ , c ] = ns(q);
+  if (req.autho['*'] && req.autho['*'][method] === 1) return true;
   c = c.split('.');
   while (c.length) {
     let k = req.autho[c.join('.')];
-    if (k === 1 || k[method] === 1) return true;
+    if (k && (k === 1 || k[method] === 1)) return true;
     c.pop();
   }
   return false;
