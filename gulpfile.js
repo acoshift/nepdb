@@ -40,8 +40,13 @@ gulp.task('test', ['build'], function() {
   return;
 });
 
-gulp.task('watch', function() {
-  gulp.watch(paths.src + '**/*.js', ['js']);
+gulp.task('watch', ['build'], function() {
+  gulp.watch(paths.src + '**/*.js', function() {
+    return gulp.src(paths.src + '**/*.js')
+      .pipe(babel({ presets: ['es2015']}))
+      .on('error', function() { console.log('compile error'); })
+      .pipe(gulp.dest(paths.build));
+  });
   gulp.watch(paths.src + '**/*.json', ['json']);
 });
 
