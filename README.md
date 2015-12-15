@@ -1,5 +1,7 @@
 # nepdb
 
+## Readme was out of date
+
 ## Getting started
 
 // TODO
