@@ -128,7 +128,48 @@ function preprocess(q) {
   });
 }
 
-nq.parser.on('after', q => preprocess(q.params) );
+var methodAlias = {
+  /* CRUD Operator */
+  c: 'create',
+  r: 'read',
+  u: 'update',
+  d: 'delete',
+  /* $CRUD Operator */
+  $c: '$create',
+  $r: '$read',
+  $u: '$update',
+  $d: '$delete',
+  /* Token Operator */
+  l: 'login',
+  f: 'refresh',
+  /* Advanced Operator */
+  cnt: 'count',
+  /* DB */
+  cd: 'createDatabase',
+  rd: 'renameDatabase',
+  ls: 'listDatabases',
+  dd: 'dropDatabase',
+  /* Collection */
+  cc: 'createCollection',
+  rc: 'renameCollection',
+  lc: 'listCollections',
+  dc: 'dropCollection',
+  /* Index */
+  ci: 'createIndex',
+  ii: 'indexInformation',
+  ei: 'ensureIndex',
+  li: 'listIndexes',
+  ix: 'indexExists',
+};
+
+function mapMethodAlias(q) {
+  if (methodAlias[q.method]) q.method = methodAlias[q.method];
+}
+
+nq.parser.on('after', q => {
+  mapMethodAlias(q);
+  preprocess(q.params);
+});
 
 function log(q, req, ...args) {
   let user = decodeToken((authToken(req)));
