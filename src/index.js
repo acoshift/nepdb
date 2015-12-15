@@ -1,5 +1,3 @@
-'use strict';
-
 import express from 'express';
 import http from 'http';
 import { MongoClient, ObjectID } from 'mongodb';
@@ -74,9 +72,10 @@ function ns(q) {
 
 function makeToken(user) {
   return jwt.sign({
-    user: user.user,
+    name: user.name,
     pwd: user.pwd,
-    ns: user.ns
+    ns: user.ns,
+    role: user.role
   }, config.secret, {
     algorithm: 'HS256',
     expiresIn: config.expire
@@ -115,11 +114,12 @@ function calc(k, v) {
 function preprocess(q) {
   _.forOwn(q, (v, k, a) => {
     if (k.startsWith('$')) {
+      let p;
       _.forOwn(v, (_v, _k, _a) => {
-        let p = calc(k, _v);
+        p = calc(k, _v);
         if (p !== null) a[_k] = p;
       });
-      delete a[k];
+      if (p) delete a[k];
     } else if (typeof v === 'object') {
       preprocess(v);
     } else if (k === '_id') {
@@ -134,10 +134,10 @@ function log(q, req, ...args) {
   let user = decodeToken((authToken(req)));
   let [ d ] = ns(q);
   let l = {
-    user: user ? user.user : null,
+    user: user ? user.name : null,
     q: q
   };
-  if (d) db.db(d).collection('log').insertOne(l);
+  if (d) db.db(d).collection('db.logs').insertOne(l);
   args.pop()();
 }
 
@@ -148,33 +148,35 @@ function authToken(req) {
   return token;
 }
 
-function auth(req, res, next) {
+function authen(req, res, next) {
   let token = authToken(req);
   if (!token) return next();
   let user;
   try {
     user = jwt.verify(token, config.secret);
-    if (!user || !user.user || !user.ns) throw new Error();
-  } catch (e) { return next(); }
-
-  // TODO: check method and db name with user's roles
-  /*db.db(user.ns).collection('user').findOne({
-    user: user.user
-  }, (err, r) => {
-    if (err || !r || !r.pwd || !bcrypt.compareSync(user.pwd, r.pwd)) return reject(res);
-
-
-  });*/
-
+    if (!user || !user.name || !user.ns) throw new Error();
+  } catch (e) { }
   req.user = user;
   next();
+}
+
+function autho(q, req, ...args) {
+  req.autho = null;
+  let user = req.user;
+  let [ d ] = ns(q);
+  if (!user || !user.ns) user = { role: 'guest', ns: d };
+  db.db(user.ns).collection('db.roles').findOne({name: user.role}, (err, r) => {
+    if (err || !r) return args.pop()();
+    req.autho = r.dbs;
+    args.pop()();
+  });
 }
 
 function decodeToken(token) {
   let user = null;
   try {
     user = jwt.decode(token, config.secret);
-    if (!user || !user.user || !user.ns) throw new Error();
+    if (!user || !user.name || !user.ns) throw new Error();
   } catch(e) { return null; }
   return user;
 }
@@ -189,30 +191,50 @@ function collection(q, cb) {
   }, cb);
 }
 
-function login(ns, user, pwd, cb) {
+function login(ns, name, pwd, cb) {
   if (!ns ||
-      !user ||
+      !name ||
       !pwd ||
-      typeof user !== 'string' ||
+      typeof name !== 'string' ||
       typeof pwd !== 'string') return cb(null);
 
-  db.db(ns).collection('user').findOne({
-    user: user
-  }, (err, r) => {
-    if (err || !r || !r.pwd || !bcrypt.compareSync(pwd, r.pwd)) return cb(null);
+  db.db(ns).collection('db.users').findOne({ name: name }, (err, r) => {
+    if (err ||
+        !r ||
+        !r.enabled ||
+        !r.pwd ||
+        !bcrypt.compareSync(pwd, r.pwd)) {
+      return cb(null);
+    }
     let profile = {
-      user: user,
+      name: name,
       pwd: pwd,
-      ns: ns
+      ns: ns,
+      role: r.role || null
     };
+    console.log(profile);
     cb({ token: makeToken(profile) });
   });
 }
 
+function isAuth(q, req, method) {
+  if (!req.user || !req.autho) return false;
+  let [ , c ] = ns(q);
+  c = c.split('.');
+  while (c.length) {
+    let k = req.autho[c.join('.')];
+    if (k === 1 || k[method] === 1) return true;
+    c.pop();
+  }
+  return false;
+}
+
 nq.use(log);
 
+nq.use(autho);
+
 nq.on('login', null, (q, req, res) => {
-  login(q.name, q.params.user, q.params.pwd, r => {
+  login(q.name, q.params.name, q.params.pwd, r => {
     if (!r) return reject(res);
     res.json(q.response(r));
   });
@@ -221,13 +243,13 @@ nq.on('login', null, (q, req, res) => {
 nq.on('refresh', '', (q, req, res) => {
   let user = decodeToken((authToken(req)));
   if (!user) return reject(res);
-  login(user.ns, user.user, user.pwd, (r) => {
+  login(user.ns, user.name, user.pwd, r => {
     res.json(q.response(r));
   });
 });
 
-nq.on('create', null, (q, req, res) => {
-  if (!req.user) return reject(res);
+nq.on('$create', null, (q, req, res) => {
+  if (!isAuth(q, req, 'c')) return reject(res);
   if (!(q.params instanceof Array)) return error(res, 'NepDBError', 'Parameter must be an array of object');
   collection(q, (err, c) => {
     if (err || !c) return reject(res);
@@ -235,8 +257,8 @@ nq.on('create', null, (q, req, res) => {
   });
 });
 
-nq.on('$create', null, (q, req, res) => {
-  if (!req.user) return reject(res);
+nq.on('create', null, (q, req, res) => {
+  if (!isAuth(q, req, 'c')) return reject(res);
   if (q.params instanceof Array) return error(res, 'NepDBError', 'Parameter must be an object');
   collection(q, (err, c) => {
     if (err || !c) return reject(res);
@@ -244,8 +266,8 @@ nq.on('$create', null, (q, req, res) => {
   });
 });
 
-nq.on('read', null, (q, req, res) => {
-  if (!req.user) return reject(res);
+nq.on('$read', null, (q, req, res) => {
+  if (!isAuth(q, req, 'r')) return reject(res);
 
   let x = q.params;
   let opt = {};
@@ -266,15 +288,17 @@ nq.on('read', null, (q, req, res) => {
   });
 });
 
-nq.on('$read', null, (q, req, res) => {
-  if (!req.user) return reject(res);collection(q, (err, c) => {
+nq.on('read', null, (q, req, res) => {
+  if (!isAuth(q, req, 'r')) return reject(res);
+
+  collection(q, (err, c) => {
     if (err || !c) return reject(res);
     c.findOne(q.params, resp.bind(this, req, res, q));
   });
 });
 
-nq.on('update', null, (q, req, res) => {
-  if (!req.user) return reject(res);
+nq.on('$update', null, (q, req, res) => {
+  if (!isAuth(q, req, 'u')) return reject(res);
   if (!(q.params instanceof Array) || q.params.length !== 2) {
     return error(res, 'NepQError', 'Parameter must be an array of 2 objects');
   }
@@ -285,8 +309,8 @@ nq.on('update', null, (q, req, res) => {
   });
 });
 
-nq.on('$update', null, (q, req, res) => {
-  if (!req.user) return reject(res);
+nq.on('update', null, (q, req, res) => {
+  if (!isAuth(q, req, 'u')) return reject(res);
   if (!(q.params instanceof Array) || q.params.length !== 2) {
     return error(res, 'NepDBError', 'Parameter must be an array of 2 objects');
   }
@@ -297,16 +321,16 @@ nq.on('$update', null, (q, req, res) => {
   });
 });
 
-nq.on('delete', null, (q, req, res) => {
-  if (!req.user) return reject(res);
+nq.on('$delete', null, (q, req, res) => {
+  if (!isAuth(q, req, 'd')) return reject(res);
   collection(q, (err, c) => {
     if (err || !c) return reject(res);
     c.deleteMany(q.params, resp.bind(this, req, res, q));
   });
 });
 
-nq.on('$delete', null, (q, req, res) => {
-  if (!req.user) return reject(res);
+nq.on('delete', null, (q, req, res) => {
+  if (!isAuth(q, req, 'd')) return reject(res);
   collection(q, (err, c) => {
     if (err || !c) return reject(res);
     c.deleteOne(q.params, resp.bind(this, req, res, q));
@@ -329,7 +353,7 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(auth);
+app.use(authen);
 
 app.use(nq.bodyParser());
 

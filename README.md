@@ -128,13 +128,7 @@ $update stock.product(
   _id,
   name,
   dbs {
-    __db_name__ {
-      create,
-      read,
-      update,
-      delete,
-      admin
-    }
+    __db_name__ { c, r, u, d }
   }
 }
 ```
