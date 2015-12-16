@@ -12,16 +12,104 @@ import etag from 'etag';
 import fresh from 'fresh';
 import config from './config';
 
+import opToken from './operators/token';
+import opCreate from './operators/create';
+import opRead from './operators/read';
+import opUpdate from './operators/update';
+import opDelete from './operators/delete';
+
 function decode(base64) {
   return base64 ? new Buffer(base64, 'base64').toString() : null;
 }
 
 config.secret = decode(config.secret);
+config.keys.private = decode(config.keys.private);
+config.keys.public = decode(config.keys.public);
+
+var app = express();
+var db;
+var nq = nepq();
+
+var nepdb = {
+  config: config,
+  app: app,
+  db: db,
+  nq: nq,
+  reject: reject,
+  resp: resp,
+  collection: collection,
+  makeToken: makeToken,
+  decodeToken: decodeToken,
+  authToken: authToken,
+  authen: authen,
+  autho: autho,
+  isAuth: isAuth,
+
+  start: () => {
+    db = db;
+    app.use(compression(config.compression));
+    app.set('x-powered-by', false);
+    app.set('etag', 'strong');
+
+    nq.parser.on('after', q => {
+      mapMethodAlias(q);
+      preprocess(q.params);
+    });
+
+    nq.use(log);
+    nq.use(autho);
+
+    opToken.apply(nepdb);
+    opCreate.apply(nepdb);
+    opRead.apply(nepdb);
+    opUpdate.apply(nepdb);
+    opDelete.apply(nepdb);
+
+    nq.use((q, req, res) => {
+      error(res, 'NepDBError', 'Not Implemented');
+    });
+
+    nq.error((req, res) => {
+      error(res, 'NepQError', 'Bad Request');
+    });
+
+    app.use((req, res, next) => {
+      // TODO: config CORS from database
+      res.header('Access-Control-Allow-Origin', '*');
+      res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+      if (req.method === 'OPTIONS') return res.sendStatus(204);
+      next();
+    });
+
+    app.use(authen);
+    app.use(nq.bodyParser());
+
+    app.use((req, res) => {
+      res.json({ error: { name: 'NepDBError', message: 'Bad Request' }});
+    });
+  }
+};
 
 var connectionUri = (() => {
   let { user, pwd, host, port, maxPoolSize } = config.database;
   return `mongodb://${(user && pwd) ? `${user}:${escape(pwd)}@` : ''}${host || 'localhost'}:${port || 27017}/?maxPoolSize=${maxPoolSize}`;
 })();
+
+MongoClient.connect(connectionUri, (err, database) => {
+  if (err) throw err;
+
+  db = nepdb.db = database;
+
+  let port = config.port || 8000;
+
+  nepdb.start();
+
+  http.createServer(app).listen(port, () => {
+    console.log(`Server listening on port ${port}`);
+  });
+});
+
+/* Helper Functions */
 
 function objectId(id) {
   let _id = null;
@@ -39,47 +127,21 @@ function json(s) {
   return r;
 }
 
-var app = express();
-
-app.use(compression(config.compression));
-
-app.set('x-powered-by', false);
-
-app.set('etag', 'strong');
-
-var db;
-
-MongoClient.connect(connectionUri, (err, database) => {
-  if (err) throw err;
-
-  db = database;
-
-  let port = config.port || 8000;
-
-  http.createServer(app).listen(port, () => {
-    console.log(`Server listening on port ${port}`);
-  });
-});
-
-var nq = nepq();
+function collection(q, cb) {
+  let [ d, c ] = ns(q);
+  let col = null;
+  db.db(d).collection(c, {
+    w: 1,
+    j: false,
+    strict: true
+  }, cb);
+}
 
 function ns(q) {
   let n = q.name.split('.');
   let d = n.shift();
   let c = n.join('.');
   return [ d, c ];
-}
-
-function makeToken(user) {
-  return jwt.sign({
-    name: user.name,
-    pwd: user.pwd,
-    ns: user.ns,
-    role: user.role
-  }, config.secret, {
-    algorithm: 'HS256',
-    expiresIn: config.expire
-  });
 }
 
 function error(res, name, message) {
@@ -101,31 +163,6 @@ function resp(req, res, q, err, r) {
     }
     res.json(response);
   }
-}
-
-function calc(k, v) {
-  switch (k) {
-    case '$bcrypt':
-      return bcrypt.hashSync(v, bcrypt.genSaltSync(10));
-  }
-  return null;
-}
-
-function preprocess(q) {
-  _.forOwn(q, (v, k, a) => {
-    if (k.startsWith('$')) {
-      let p;
-      _.forOwn(v, (_v, _k, _a) => {
-        p = calc(k, _v);
-        if (p !== null) a[_k] = p;
-      });
-      if (p) delete a[k];
-    } else if (typeof v === 'object') {
-      preprocess(v);
-    } else if (k === '_id') {
-      a[k] = objectId(v);
-    }
-  });
 }
 
 var methodAlias = {
@@ -167,10 +204,51 @@ function mapMethodAlias(q) {
   if (methodAlias[q.method]) q.method = methodAlias[q.method];
 }
 
-nq.parser.on('after', q => {
-  mapMethodAlias(q);
-  preprocess(q.params);
-});
+function calc(k, v) {
+  switch (k) {
+    case '$bcrypt':
+      return bcrypt.hashSync(v, bcrypt.genSaltSync(10));
+  }
+  return null;
+}
+
+function preprocess(q) {
+  _.forOwn(q, (v, k, a) => {
+    if (k.startsWith('$')) {
+      let p;
+      _.forOwn(v, (_v, _k, _a) => {
+        p = calc(k, _v);
+        if (p !== null) a[_k] = p;
+      });
+      if (p) delete a[k];
+    } else if (typeof v === 'object') {
+      preprocess(v);
+    } else if (k === '_id') {
+      a[k] = objectId(v);
+    }
+  });
+}
+
+function makeToken(user) {
+  return jwt.sign({
+    name: user.name,
+    pwd: user.pwd,
+    ns: user.ns,
+    role: user.role
+  }, config.secret, {
+    algorithm: 'HS256',
+    expiresIn: config.expire
+  });
+}
+
+function decodeToken(token) {
+  let user = null;
+  try {
+    user = jwt.decode(token, config.secret);
+    if (!user || !user.name || !user.ns) throw new Error();
+  } catch(e) { }
+  return user;
+}
 
 function log(q, req, ...args) {
   let user = decodeToken((authToken(req)));
@@ -210,55 +288,11 @@ function autho(q, req, ...args) {
   let user = req.user;
   let [ d ] = ns(q);
   if (!user || user.name === 'guest' || !user.ns || user.ns !== d) user = { role: 'guest', ns: d };
+  if (!d) return args.pop()();
   db.db(d).collection('db.roles').findOne({name: user.role}, (err, r) => {
     if (err || !r) return args.pop()();
     req.autho = r.dbs;
     args.pop()();
-  });
-}
-
-function decodeToken(token) {
-  let user = null;
-  try {
-    user = jwt.decode(token, config.secret);
-    if (!user || !user.name || !user.ns) throw new Error();
-  } catch(e) { return null; }
-  return user;
-}
-
-function collection(q, cb) {
-  let [ d, c ] = ns(q);
-  let col = null;
-  db.db(d).collection(c, {
-    w: 1,
-    j: false,
-    strict: true
-  }, cb);
-}
-
-function login(ns, name, pwd, cb) {
-  if (!ns ||
-      !name ||
-      !pwd ||
-      typeof name !== 'string' ||
-      typeof pwd !== 'string') return cb(null);
-
-  db.db(ns).collection('db.users').findOne({ name: name }, (err, r) => {
-    if (err ||
-        !r ||
-        !r.enabled ||
-        !r.pwd ||
-        !bcrypt.compareSync(pwd, r.pwd)) {
-      return cb(null);
-    }
-    let profile = {
-      name: name,
-      pwd: pwd,
-      ns: ns,
-      role: r.role || null
-    };
-    console.log(profile);
-    cb({ token: makeToken(profile) });
   });
 }
 
@@ -274,156 +308,3 @@ function isAuth(q, req, method) {
   }
   return false;
 }
-
-nq.use(log);
-
-nq.use(autho);
-
-nq.on('login', null, (q, req, res) => {
-  login(q.name, q.params.name, q.params.pwd, r => {
-    if (!r) return reject(res);
-    res.json(q.response(r));
-  });
-});
-
-nq.on('refresh', '', (q, req, res) => {
-  let user = decodeToken((authToken(req)));
-  if (!user) return reject(res);
-  login(user.ns, user.name, user.pwd, r => {
-    res.json(q.response(r));
-  });
-});
-
-nq.on('$create', null, (q, req, res) => {
-  if (!isAuth(q, req, 'c')) return reject(res);
-  if (!(q.params instanceof Array)) return error(res, 'NepDBError', 'Parameter must be an array of object');
-  collection(q, (err, c) => {
-    if (err || !c) return reject(res);
-    c.insertMany(q.params, resp.bind(this, req, res, q));
-  });
-});
-
-nq.on('create', null, (q, req, res) => {
-  if (!isAuth(q, req, 'c')) return reject(res);
-  if (q.params instanceof Array) return error(res, 'NepDBError', 'Parameter must be an object');
-  collection(q, (err, c) => {
-    if (err || !c) return reject(res);
-    c.insertOne(q.params, resp.bind(this, req, res, q));
-  });
-});
-
-nq.on('$read', null, (q, req, res) => {
-  if (!isAuth(q, req, 'r')) return reject(res);
-
-  let x = q.params;
-  let opt = {};
-
-  if (q.params.length >= 2) {
-    x = q.params[0];
-    opt = q.params[1];
-  }
-
-  opt = {
-    limit: opt.limit || 0,
-    skip: opt.skip || 0
-  };
-
-  collection(q, (err, c) => {
-    if (err || !c) return reject(res);
-    c.find(x).skip(opt.skip).limit(opt.limit).toArray(resp.bind(this, req, res, q));
-  });
-});
-
-nq.on('read', null, (q, req, res) => {
-  if (!isAuth(q, req, 'r')) return reject(res);
-
-  collection(q, (err, c) => {
-    if (err || !c) return reject(res);
-    c.findOne(q.params, resp.bind(this, req, res, q));
-  });
-});
-
-nq.on('$update', null, (q, req, res) => {
-  if (!isAuth(q, req, 'u')) return reject(res);
-  if (!(q.params instanceof Array) || q.params.length !== 2) {
-    return error(res, 'NepQError', 'Parameter must be an array of 2 objects');
-  }
-  q.params[1].$currentDate = { updated: true };
-  collection(q, (err, c) => {
-    if (err || !c) return reject(res);
-    c.updateMany(q.params[0], q.params[1], resp.bind(this, req, res, q));
-  });
-});
-
-nq.on('update', null, (q, req, res) => {
-  if (!isAuth(q, req, 'u')) return reject(res);
-  if (!(q.params instanceof Array) || q.params.length !== 2) {
-    return error(res, 'NepDBError', 'Parameter must be an array of 2 objects');
-  }
-  q.params[1].$currentDate = { updated: true };
-  collection(q, (err, c) => {
-    if (err || !c) return reject(res);
-    c.updateOne(q.params[0], q.params[1], resp.bind(this, req, res, q));
-  });
-});
-
-nq.on('$delete', null, (q, req, res) => {
-  if (!isAuth(q, req, 'd')) return reject(res);
-  collection(q, (err, c) => {
-    if (err || !c) return reject(res);
-    c.deleteMany(q.params, resp.bind(this, req, res, q));
-  });
-});
-
-nq.on('delete', null, (q, req, res) => {
-  if (!isAuth(q, req, 'd')) return reject(res);
-  collection(q, (err, c) => {
-    if (err || !c) return reject(res);
-    c.deleteOne(q.params, resp.bind(this, req, res, q));
-  });
-});
-
-nq.on('count', null, (q, req, res) => {
-  if (!isAuth(q, req, 'r')) return reject(res);
-  let x = q.params;
-  let opt = {};
-
-  if (q.params.length >= 2) {
-    x = q.params[0];
-    opt = q.params[1];
-  }
-
-  opt = {
-    limit: opt.limit || null,
-    skip: opt.skip || null
-  };
-
-  collection(q, (err, c) => {
-    if (err || !c) return reject(res);
-    c.count(x, opt, resp.bind(this, req, res, q));
-  });
-});
-
-nq.use((q, req, res) => {
-  error(res, 'NepDBError', 'Not Implemented');
-});
-
-nq.error((req, res) => {
-  error(res, 'NepQError', 'Bad Request');
-});
-
-app.use((req, res, next) => {
-  // TODO: config CORS from database
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  if (req.method === 'OPTIONS') return res.sendStatus(204);
-  next();
-});
-
-app.use(authen);
-
-app.use(nq.bodyParser());
-
-app.use((req, res) => {
-  res.json({ error: { name: 'NepDBError', message: 'Bad Request' }});
-});
