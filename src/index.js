@@ -142,6 +142,7 @@ var methodAlias = {
   /* Token Operator */
   l: 'login',
   f: 'refresh',
+  k: 'key',
   /* Advanced Operator */
   cnt: 'count',
   /* DB */
@@ -379,6 +380,27 @@ nq.on('delete', null, (q, req, res) => {
   collection(q, (err, c) => {
     if (err || !c) return reject(res);
     c.deleteOne(q.params, resp.bind(this, req, res, q));
+  });
+});
+
+nq.on('count', null, (q, req, res) => {
+  if (!isAuth(q, req, 'r')) return reject(res);
+  let x = q.params;
+  let opt = {};
+
+  if (q.params.length >= 2) {
+    x = q.params[0];
+    opt = q.params[1];
+  }
+
+  opt = {
+    limit: opt.limit || null,
+    skip: opt.skip || null
+  };
+
+  collection(q, (err, c) => {
+    if (err || !c) return reject(res);
+    c.count(x, opt, resp.bind(this, req, res, q));
   });
 });
 
