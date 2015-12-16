@@ -257,7 +257,7 @@ function log(q, req, ...args) {
     user: user ? user.name : null,
     q: q
   };
-  if (d) db.db(d).collection('db.logs').insertOne(l);
+  if (d) db.db(d).collection('db.logs').insertOne(l, { w: 0 });
   args.pop()();
 }
 
