@@ -39,8 +39,7 @@ var nepdb = {
   resp: resp,
   collection: collection,
   makeToken: makeToken,
-  decodeToken: decodeToken,
-  authToken: authToken,
+  getToken: getToken,
   authen: authen,
   autho: autho,
   isAuth: isAuth,
@@ -219,26 +218,23 @@ function makeToken(user) {
 }
 
 function decodeToken(token) {
-  let user = null;
+  let d = null;
   try {
-    user = jwt.decode(token);
-    if (!user || !user.name || !user.ns) throw new Error();
-  } catch(e) { }
-  return user;
+    d = jwt.decode(token, { json: true, complete: true });
+  } catch (e) {}
+  return d;
 }
 
 function log(q, req, ...args) {
-  let user = decodeToken((authToken(req)));
-  let [ d ] = ns(q);
   let l = {
-    user: user ? user.name : null,
+    t: decodeToken(getToken(req)),
     q: q
   };
-  if (d) db.db(d).collection('db.logs').insertOne(l, { w: 0 });
+  db.db('nepdb').collection('logs').insertOne(l, { w: 0 });
   args.pop()();
 }
 
-function authToken(req) {
+function getToken(req) {
   if (!req.headers.authorization) return null;
   let [method, token] = req.headers.authorization.split(' ');
   if (method !== 'Bearer') return null;
@@ -246,7 +242,7 @@ function authToken(req) {
 }
 
 function authen(req, res, next) {
-  let token = authToken(req);
+  let token = getToken(req);
   let user = {
     name: 'guest',
     role: 'guest'

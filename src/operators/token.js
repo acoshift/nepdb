@@ -3,14 +3,10 @@ import bcrypt from 'bcryptjs';
 export default function() {
   let {
     nq,
-    app,
     db,
     config,
     reject,
     makeToken,
-    decodeToken,
-    collection,
-    authToken,
   } = this;
 
   function login(ns, name, pwd, cb) {
