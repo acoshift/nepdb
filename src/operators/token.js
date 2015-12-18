@@ -44,12 +44,4 @@ export default function() {
       res.json(q.response(r));
     });
   });
-
-  nq.on('refresh', '', (q, req, res) => {
-    let user = decodeToken((authToken(req)));
-    if (!user) return reject(res);
-    login(user.ns, user.name, user.pwd, r => {
-      res.json(q.response(r));
-    });
-  });
 }
