@@ -52,10 +52,4 @@ export default function() {
       res.json(q.response(r));
     });
   });
-
-  nq.on('key', '', (q, req, res) => {
-    res.json(q.response({
-      key: config.keys.public
-    }));
-  });
 }
