@@ -168,35 +168,13 @@ function resp(req, res, q, err, r) {
 }
 
 var methodAlias = {
-  /* CRUDL Operator */
   c: 'create',
   r: 'read',
   u: 'update',
   d: 'delete',
   l: 'list',
-  /* Token Operator */
   s: 'signin',
-  su: 'signup',
-  f: 'refresh',
-  k: 'key',
-  /* Advanced Operator */
-  cnt: 'count',
-  /* DB */
-  cd: 'createDatabase',
-  rd: 'renameDatabase',
-  ls: 'listDatabases',
-  dd: 'dropDatabase',
-  /* Collection */
-  cc: 'createCollection',
-  rc: 'renameCollection',
-  lc: 'listCollections',
-  dc: 'dropCollection',
-  /* Index */
-  ci: 'createIndex',
-  ii: 'indexInformation',
-  ei: 'ensureIndex',
-  li: 'listIndexes',
-  ix: 'indexExists',
+  n: 'count',
 };
 
 function mapMethodAlias(q) {
@@ -243,7 +221,7 @@ function makeToken(user) {
 function decodeToken(token) {
   let user = null;
   try {
-    user = jwt.decode(token, config.secret);
+    user = jwt.decode(token);
     if (!user || !user.name || !user.ns) throw new Error();
   } catch(e) { }
   return user;
@@ -275,7 +253,7 @@ function authen(req, res, next) {
   };
   try {
     if (!token) throw new Error();
-    user = jwt.verify(token, config.secret);
+    user = jwt.verify(token, config.secret, { algorithm: 'HS256' });
     if (!user || !user.name || !user.ns) throw new Error();
   } catch (e) { }
   req.user = user;
