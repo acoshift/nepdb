@@ -181,7 +181,7 @@ function mapMethodAlias(q) {
 function calc(k, v) {
   switch (k) {
     case '$bcrypt':
-      return bcrypt.hashSync(v, bcrypt.genSaltSync(10));
+      return bcrypt.hashSync(v, config.bcrypt.cost);
   }
   return null;
 }
@@ -203,15 +203,14 @@ function preprocess(q) {
   });
 }
 
-function makeToken(user) {
+function makeToken(user, exp) {
   return jwt.sign({
-    name: user.name,
-    pwd: user.pwd,
-    ns: user.ns,
+    sub: `${user.name}@${user.ns}`,
     role: user.role
   }, config.secret, {
-    algorithm: 'HS256',
-    expiresIn: config.expire
+    algorithm: config.token.algorithm,
+    expiresIn: exp || config.token.expiresIn,
+    issuer: config.token.issuer
   });
 }
 
@@ -241,25 +240,45 @@ function getToken(req) {
 
 function authen(req, res, next) {
   let token = getToken(req);
-  let user = {
-    name: 'guest',
-    role: 'guest'
-  };
+  let user;
   try {
     if (!token) throw new Error();
-    user = jwt.verify(token, config.secret, { algorithm: 'HS256' });
-    if (!user || !user.name || !user.ns) throw new Error();
-  } catch (e) { }
+    user = jwt.verify(token, config.secret, { algorithm: config.token.algorithm });
+    if (!user || !user.sub || !user.role) throw new Error();
+    let [ name, ns ] = user.sub.split('@');
+    user.name = name;
+    user.ns = ns;
+  } catch (e) {
+    user = {
+      sub: 'guest',
+      role: 'guest',
+      name: 'guest',
+    };
+  }
   req.user = user;
   next();
 }
 
 function autho(q, req, ...args) {
   req.autho = null;
-  let user = req.user;
+
   let [ d ] = ns(q);
-  if (!user || user.name === 'guest' || !user.ns || user.ns !== d) user = { role: 'guest', ns: d };
+
+  // add user information if not exists
+  let user = req.user;
+  if (!user) user = {};
+  if (!user.sub) user.sub = user.name = 'guest';
+  if (!user.role) user.role = 'guest';
+  if (!user.ns || user.ns !== d) {
+    user.role = 'guest';
+    user.ns = d;
+  }
+  req.user = user;
+
+  // no namespace = no autho
   if (!d) return args.pop()();
+
+  // get user's role from database
   db.db(d).collection('db.roles').findOne({name: user.role}, (err, r) => {
     if (err || !r) return args.pop()();
     req.autho = r.dbs;
@@ -269,13 +288,18 @@ function autho(q, req, ...args) {
 
 function isAuth(q, req, method) {
   if (!req.user || !req.autho) return false;
-  let [ , c ] = ns(q);
+
+  // check wildcards
   if (req.autho['*'] && req.autho['*'][method] === 1) return true;
+
+  let [ , c ] = ns(q);
   c = c.split('.');
   while (c.length) {
     let k = req.autho[c.join('.')];
     if (k && (k === 1 || k[method] === 1)) return true;
     c.pop();
   }
+
+  // no autho found
   return false;
 }
