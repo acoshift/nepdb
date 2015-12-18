@@ -5,6 +5,11 @@
   },
   "files": [
     "src/index.js",
+    "src/operators/create.js",
+    "src/operators/delete.js",
+    "src/operators/read.js",
+    "src/operators/token.js",
+    "src/operators/update.js",
     "typings/tsd.d.ts"
   ]
 }
