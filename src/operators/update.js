@@ -1,3 +1,5 @@
+import _ from 'lodash';
+
 export default function() {
   let {
     nq,
@@ -5,30 +7,32 @@ export default function() {
     resp,
     isAuth,
     collection,
+    objectId,
     error,
   } = this;
 
-  nq.on('$update', null, (q, req, res) => {
-    if (!isAuth(q, req, 'u')) return reject(res);
-    if (!(q.params instanceof Array) || q.params.length !== 2) {
-      return error(res, 'NepQError', 'Parameter must be an array of 2 objects');
-    }
-    q.params[1].$currentDate = { updated: true };
-    collection(q, (err, c) => {
-      if (err || !c) return reject(res);
-      c.updateMany(q.params[0], q.params[1], resp.bind(this, req, res, q));
-    });
-  });
-
   nq.on('update', null, (q, req, res) => {
+    // check update authorization
     if (!isAuth(q, req, 'u')) return reject(res);
-    if (!(q.params instanceof Array) || q.params.length !== 2) {
-      return error(res, 'NepDBError', 'Parameter must be an array of 2 objects');
-    }
-    q.params[1].$currentDate = { updated: true };
+
+    // check params
+    if (!_.isArray(q.params) ||
+        q.params.length !== 2 ||
+        !_.isString(q.params[0]) ||
+        !_.isPlainObject(q.params[1])) return error(res, 'NepDBError', 'Invalid parameters');
+
+    q.params[0] = objectId(q.params[0]);
+
+    if (!q.params[0]) return error(res, 'NepDBError', 'Invalid parameters');
+
+    let doc = {
+      $set: q.params[1],
+      $currentDate: { _updated: true }
+    };
+
     collection(q, (err, c) => {
       if (err || !c) return reject(res);
-      c.updateOne(q.params[0], q.params[1], resp.bind(this, req, res, q));
+      c.updateOne({ _id: q.params[0] }, doc, resp.bind(this, req, res, q));
     });
   });
 }
