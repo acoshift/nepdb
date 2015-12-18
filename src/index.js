@@ -170,7 +170,7 @@ var methodAlias = {
   u: 'update',
   d: 'delete',
   l: 'list',
-  s: 'signin',
+  t: 'token',
   n: 'count',
 };
 

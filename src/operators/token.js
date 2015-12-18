@@ -4,12 +4,11 @@ export default function() {
   let {
     nq,
     db,
-    config,
     reject,
     makeToken,
   } = this;
 
-  function login(ns, name, pwd, cb) {
+  function token(ns, name, pwd, cb) {
     if (!ns ||
         !name ||
         !pwd ||
@@ -34,8 +33,8 @@ export default function() {
     });
   }
 
-  nq.on('login', null, (q, req, res) => {
-    login(q.name, q.params.name, q.params.pwd, r => {
+  nq.on('token', null, (q, req, res) => {
+    token(q.name, q.params.name, q.params.pwd, r => {
       if (!r) return reject(res);
       res.json(q.response(r));
     });
