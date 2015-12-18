@@ -23,8 +23,6 @@ function decode(base64) {
 }
 
 config.secret = decode(config.secret);
-config.keys.private = decode(config.keys.private);
-config.keys.public = decode(config.keys.public);
 
 var app = express();
 var db;
