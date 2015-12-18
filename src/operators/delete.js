@@ -1,3 +1,5 @@
+import _ from 'lodash';
+
 export default function() {
   let {
     nq,
@@ -5,21 +7,26 @@ export default function() {
     resp,
     isAuth,
     collection,
+    error,
+    objectId,
   } = this;
 
-  nq.on('$delete', null, (q, req, res) => {
-    if (!isAuth(q, req, 'd')) return reject(res);
-    collection(q, (err, c) => {
-      if (err || !c) return reject(res);
-      c.deleteMany(q.params, resp.bind(this, req, res, q));
-    });
-  });
-
   nq.on('delete', null, (q, req, res) => {
+    // check delete authorization
     if (!isAuth(q, req, 'd')) return reject(res);
+
+    // change params to array
+    if (!_.isArray(q.params)) q.params = [ q.params ];
+
+    // check are params string
+    if (!_.every(q.params, _.isString)) return error(res, 'NepDBError', 'Invalid parameters');
+
+    // convert id string to ObjectID
+    let params = _.map(q.params, objectId);
+
     collection(q, (err, c) => {
       if (err || !c) return reject(res);
-      c.deleteOne(q.params, resp.bind(this, req, res, q));
+      c.deleteMany({ _id: { $in: params } }, resp.bind(this, req, res, q));
     });
   });
 }

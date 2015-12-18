@@ -5,6 +5,7 @@ export default function() {
     resp,
     isAuth,
     collection,
+    error,
   } = this;
 
   nq.on('$update', null, (q, req, res) => {

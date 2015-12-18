@@ -44,6 +44,8 @@ var nepdb = {
   authen: authen,
   autho: autho,
   isAuth: isAuth,
+  error: error,
+  objectId: objectId,
 
   start: () => {
     db = db;
@@ -166,18 +168,15 @@ function resp(req, res, q, err, r) {
 }
 
 var methodAlias = {
-  /* CRUD Operator */
+  /* CRUDL Operator */
   c: 'create',
   r: 'read',
   u: 'update',
   d: 'delete',
-  /* $CRUD Operator */
-  $c: '$create',
-  $r: '$read',
-  $u: '$update',
-  $d: '$delete',
+  l: 'list',
   /* Token Operator */
-  l: 'login',
+  s: 'signin',
+  su: 'signup',
   f: 'refresh',
   k: 'key',
   /* Advanced Operator */
