@@ -1,3 +1,5 @@
+import _ from 'lodash';
+
 export default function() {
   let {
     nq,
@@ -5,15 +7,21 @@ export default function() {
     resp,
     isAuth,
     collection,
+    objectId,
+    error,
   } = this;
 
-  nq.on('$read', null, (q, req, res) => {
+  nq.on('list', null, (q, req, res) => {
+    // check read authorization
     if (!isAuth(q, req, 'r')) return reject(res);
+
+    // check params
+    if (_.isArray(q.params) && q.params.length > 2) return error(res, 'NepDBError', 'Invalid parameters');
 
     let x = q.params;
     let opt = {};
 
-    if (q.params.length >= 2) {
+    if (_.isArray(q.params) && q.params.length === 2) {
       x = q.params[0];
       opt = q.params[1];
     }
@@ -30,11 +38,21 @@ export default function() {
   });
 
   nq.on('read', null, (q, req, res) => {
+    // check read authorization
     if (!isAuth(q, req, 'r')) return reject(res);
+
+    // change params to array
+    if (!_.isArray(q.params)) q.params = [ q.params ];
+
+    // check are params string
+    if (!_.every(q.params, _.isString)) return error(res, 'NepDBError', 'Invalid parameters');
+
+    // convert id string to ObjectID
+    let params = _.map(q.params, objectId);
 
     collection(q, (err, c) => {
       if (err || !c) return reject(res);
-      c.findOne(q.params, resp.bind(this, req, res, q));
+      c.find({ _id: { $in: params } }).toArray(resp.bind(this, req, res, q));
     });
   });
 
