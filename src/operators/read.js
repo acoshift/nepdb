@@ -57,18 +57,24 @@ export default function() {
   });
 
   nq.on('count', null, (q, req, res) => {
+    // check read authorization
     if (!isAuth(q, req, 'r')) return reject(res);
+
+    // check params
+    if (_.isArray(q.params) && q.params.length > 2) return error(res, 'NepDBError', 'Invalid parameters');
+
     let x = q.params;
     let opt = {};
 
-    if (q.params.length >= 2) {
+    if (_.isArray(q.params) && q.params.length === 2) {
       x = q.params[0];
       opt = q.params[1];
     }
 
     opt = {
       limit: opt.limit || null,
-      skip: opt.skip || null
+      skip: opt.skip || null,
+      hint: opt.hint || null
     };
 
     collection(q, (err, c) => {
