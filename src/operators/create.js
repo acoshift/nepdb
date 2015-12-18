@@ -1,3 +1,5 @@
+import _ from 'lodash';
+
 export default function() {
   let {
     nq,
@@ -8,21 +10,19 @@ export default function() {
     error,
   } = this;
 
-  nq.on('$create', null, (q, req, res) => {
+  nq.on('create', null, (q, req, res) => {
+    // check create authorization
     if (!isAuth(q, req, 'c')) return reject(res);
-    if (!(q.params instanceof Array)) return error(res, 'NepDBError', 'Parameter must be an array of object');
+
+    // change params to array
+    if (!_.isArray(q.params)) q.params = [ q.params ];
+
+    // check are params plain object
+    if (!_.every(q.params, _.isPlainObject)) return error(res, 'NepDBError', 'Invalid parameters');
+
     collection(q, (err, c) => {
       if (err || !c) return reject(res);
       c.insertMany(q.params, resp.bind(this, req, res, q));
-    });
-  });
-
-  nq.on('create', null, (q, req, res) => {
-    if (!isAuth(q, req, 'c')) return reject(res);
-    if (q.params instanceof Array) return error(res, 'NepDBError', 'Parameter must be an object');
-    collection(q, (err, c) => {
-      if (err || !c) return reject(res);
-      c.insertOne(q.params, resp.bind(this, req, res, q));
     });
   });
 }
