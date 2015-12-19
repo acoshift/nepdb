@@ -71,17 +71,30 @@ var nepdb = class implements NepDB {
     return [ d, c ];
   }
 
-  error(res, name, message) {
-    res.json({ error: { name: name, message: message } });
+  errorString = {
+    400: 'Bad Request',
+    401: 'Unauthorized',
+    404: 'Not Found',
+    405: 'Method Not Allowed',
+    418: 'I\'m a teapot',
+    429: 'Too Many Requests',
+    500: 'Internal Server Error',
+    501: 'Not Implemented',
+    503: 'Service Unavailable',
+    520: 'Unknown Error',
+  }
+
+  error(res, name, code?, message?) {
+    res.status(code || 520).json({ error: { name: name, message: message || this.errorString[code || 520] } });
   }
 
   reject(res) {
-    this.error(res, 'NepDBError', 'Unauthorized');
+    this.error(res, 'NepDBError', 401);
   }
 
   resp(req, res, q, err, r) {
     if (err) {
-      this.error(res, err.name, err.message);
+      this.error(res, err.name, 500, err.message);
     } else {
       let response = q.response(r);
       if (fresh(req.headers, { etag: etag(JSON.stringify(response)) })) {
@@ -271,11 +284,11 @@ var nepdb = class implements NepDB {
     opDelete(this);
 
     this.nq.use((q, req, res) => {
-      this.error(res, 'NepDBError', 'Not Implemented');
+      this.error(res, 'NepDBError', 501);
     });
 
     this.nq.error((req, res) => {
-      this.error(res, 'NepQError', 'Bad Request');
+      this.error(res, 'NepQError', 400);
     });
 
     this.app.use((req, res, next) => {
@@ -290,7 +303,7 @@ var nepdb = class implements NepDB {
     this.app.use(this.nq.bodyParser());
 
     this.app.use((req, res) => {
-      res.json({ error: { name: 'NepDBError', message: 'Bad Request' }});
+      this.error(res, 'NepDBError', 400);
     });
   }
 

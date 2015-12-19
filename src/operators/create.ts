@@ -23,7 +23,7 @@ var op: Operator = function(nepdb: NepDB) {
     if (!_.isArray(q.params)) q.params = [ q.params ];
 
     // check are params plain object
-    if (!_.every(q.params, _.isPlainObject)) return error(res, 'NepDBError', 'Invalid parameters');
+    if (!_.every(q.params, _.isPlainObject)) return error(res, 'NepDBError', 400);
 
     collection(q, (err, c) => {
       if (err || !c) return reject(res);

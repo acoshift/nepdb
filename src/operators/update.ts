@@ -24,11 +24,11 @@ var op: Operator = function(nepdb: NepDB) {
     if (!_.isArray(q.params) ||
         q.params.length !== 2 ||
         !_.isString(q.params[0]) ||
-        !_.isPlainObject(q.params[1])) return error(res, 'NepDBError', 'Invalid parameters');
+        !_.isPlainObject(q.params[1])) return error(res, 'NepDBError', 400);
 
     q.params[0] = objectId(q.params[0]);
 
-    if (!q.params[0]) return error(res, 'NepDBError', 'Invalid parameters');
+    if (!q.params[0]) return error(res, 'NepDBError', 400);
 
     let doc = {
       $set: q.params[1],

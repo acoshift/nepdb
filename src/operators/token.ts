@@ -19,7 +19,7 @@ var op: Operator = function(nepdb: NepDB) {
 
   nq.on('login', null, (q, req, res) => {
     function badRequest() {
-      error(res, 'NepDBError', 'Bad Request');
+      error(res, 'NepDBError', 400);
     }
     // check params
     let ns = q.name;

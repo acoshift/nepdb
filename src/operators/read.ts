@@ -5,7 +5,7 @@ import {
 
 import * as _ from 'lodash';
 
-var op: Operator = function() {
+var op: Operator = function(nepdb: NepDB) {
   let {
     nq,
     reject,
@@ -14,14 +14,14 @@ var op: Operator = function() {
     collection,
     objectId,
     error,
-  } = this;
+  } = nepdb;
 
   nq.on('list', null, (q, req, res) => {
     // check read authorization
     if (!isAuth(q, req, 'r')) return reject(res);
 
     // check params
-    if (_.isArray(q.params) && q.params.length > 2) return error(res, 'NepDBError', 'Invalid parameters');
+    if (_.isArray(q.params) && q.params.length > 2) return error(res, 'NepDBError', 400);
 
     let x = q.params;
     let opt;
@@ -50,7 +50,7 @@ var op: Operator = function() {
     if (!_.isArray(q.params)) q.params = [ q.params ];
 
     // check are params string
-    if (!_.every(q.params, _.isString)) return error(res, 'NepDBError', 'Invalid parameters');
+    if (!_.every(q.params, _.isString)) return error(res, 'NepDBError', 400);
 
     // convert id string to ObjectID
     let params = _.map(q.params, objectId);
@@ -66,7 +66,7 @@ var op: Operator = function() {
     if (!isAuth(q, req, 'r')) return reject(res);
 
     // check params
-    if (_.isArray(q.params) && q.params.length > 2) return error(res, 'NepDBError', 'Invalid parameters');
+    if (_.isArray(q.params) && q.params.length > 2) return error(res, 'NepDBError', 400);
 
     let x = q.params;
     let opt;

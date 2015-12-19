@@ -5,7 +5,7 @@ import {
 
 import * as _ from 'lodash';
 
-var op: Operator = function() {
+var op: Operator = function(nepdb: NepDB) {
   let {
     nq,
     reject,
@@ -14,7 +14,7 @@ var op: Operator = function() {
     collection,
     error,
     objectId,
-  } = this;
+  } = nepdb;
 
   nq.on('delete', null, (q, req, res) => {
     // check delete authorization
@@ -24,7 +24,7 @@ var op: Operator = function() {
     if (!_.isArray(q.params)) q.params = [ q.params ];
 
     // check are params string
-    if (!_.every(q.params, _.isString)) return error(res, 'NepDBError', 'Invalid parameters');
+    if (!_.every(q.params, _.isString)) return error(res, 'NepDBError', 400);
 
     // convert id string to ObjectID
     let params = _.map(q.params, objectId);
