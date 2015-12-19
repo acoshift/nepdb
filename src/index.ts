@@ -1,28 +1,52 @@
-import express from 'express';
-import http from 'http';
+import * as express from 'express';
+import * as http from 'http';
 import { MongoClient, ObjectID } from 'mongodb';
 import { escape } from 'querystring';
-import nepq from 'nepq';
-import compression from 'compression';
-import jwt from 'jsonwebtoken';
-import bcrypt from 'bcryptjs';
-import _ from 'lodash';
-import moment from 'moment';
-import etag from 'etag';
-import fresh from 'fresh';
-import config from './config';
+import nepq = require('nepq');
+var compression = require('compression');
+import * as jwt from 'jsonwebtoken';
+import * as bcrypt from 'bcryptjs';
+import * as _ from 'lodash';
+var etag = require('etag');
+var fresh = require('fresh');
+var config: Config = require('./config');
 
-import opToken from './operators/token';
-import opCreate from './operators/create';
-import opRead from './operators/read';
-import opUpdate from './operators/update';
-import opDelete from './operators/delete';
+import opToken = require('./operators/token');
+import opCreate = require('./operators/create');
+import opRead = require('./operators/read');
+import opUpdate = require('./operators/update');
+import opDelete = require('./operators/delete');
+
+interface Config {
+  server: {
+    port: number;
+  };
+  database: {
+    user: string;
+    pwd: string;
+    host: string;
+    port: string;
+    maxPoolSize: string;
+  };
+  compression: {
+    level: number;
+  };
+  token: {
+    algorithm: string;
+    expiresIn: string;
+    issuer: string;
+    secret: string;
+  };
+  bcrypt: {
+    cost: number;
+  }
+}
 
 function decode(base64) {
   return base64 ? new Buffer(base64, 'base64').toString() : null;
 }
 
-config.secret = decode(config.secret);
+config.token.secret = decode(config.token.secret);
 
 var app = express();
 var db;
@@ -99,7 +123,7 @@ MongoClient.connect(connectionUri, (err, database) => {
 
   db = nepdb.db = database;
 
-  let port = config.port || 8000;
+  let port = config.server.port || 8000;
 
   nepdb.start();
 
@@ -207,7 +231,7 @@ function makeToken(user, exp) {
   return jwt.sign({
     sub: `${user.name}@${user.ns}`,
     role: user.role
-  }, config.secret, {
+  }, config.token.secret, {
     algorithm: config.token.algorithm,
     expiresIn: exp || config.token.expiresIn,
     issuer: config.token.issuer
@@ -243,7 +267,7 @@ function authen(req, res, next) {
   let user;
   try {
     if (!token) throw new Error();
-    user = jwt.verify(token, config.secret, { algorithm: config.token.algorithm });
+    user = jwt.verify(token, config.token.secret, { algorithms: [ config.token.algorithm ] });
     if (!user || !user.sub || !user.role) throw new Error();
     let [ name, ns ] = user.sub.split('@');
     user.name = name;

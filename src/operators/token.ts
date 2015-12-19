@@ -1,6 +1,6 @@
-import bcrypt from 'bcryptjs';
+import * as bcrypt from 'bcryptjs';
 
-export default function() {
+export = function() {
   let {
     nq,
     db,

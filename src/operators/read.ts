@@ -1,6 +1,6 @@
-import _ from 'lodash';
+import * as _ from 'lodash';
 
-export default function() {
+export = function() {
   let {
     nq,
     reject,
