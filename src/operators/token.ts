@@ -69,7 +69,7 @@ var op: Operator = function(nepdb: NepDB) {
       let token = makeToken(profile, d.exp);
       res.cookie('token', r, {
         maxAge: ms(d.exp) || ms(config.token.expiresIn),
-        //secure: true,
+        secure: true,
         httpOnly: true,
         signed: true
       });
