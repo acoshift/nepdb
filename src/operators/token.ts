@@ -1,4 +1,6 @@
 import * as bcrypt from 'bcryptjs';
+import * as _ from 'lodash';
+import ms = require('ms');
 
 export = function() {
   let {
@@ -6,37 +8,72 @@ export = function() {
     db,
     reject,
     makeToken,
+    config,
+    error,
   } = this;
 
-  function token(ns, name, pwd, cb) {
-    if (!ns ||
-        !name ||
-        !pwd ||
-        typeof name !== 'string' ||
-        typeof pwd !== 'string') return cb(null);
+  nq.on('login', null, (q, req, res) => {
+    function badRequest() {
+      error(res, 'NepDBError', 'Bad Request');
+    }
+    // check params
+    let ns = q.name;
+    if (!ns) return badRequest();
+    let d;
+    if (_.isArray(q.params)) {
+      if (q.params.length === 2) {
+        d = {
+          name: q.params[0],
+          pwd: q.params[1]
+        };
+      } else if (q.params.length === 3) {
+        d = {
+          name: q.params[0],
+          pwd: q.params[1],
+          exp: q.params[2]
+        }
+      } else {
+        return badRequest();
+      }
+    } else if (_.isPlainObject(q.params)) {
+      if (!q.params.name || !q.params.pwd) return badRequest();
+      d = {
+        name: q.params.name,
+        pwd: q.params.pwd
+      };
+      if (q.params.exp) d.exp = q.params.exp;
+    }
 
-    db.db(ns).collection('db.users').findOne({ name: name }, (err, r) => {
+    if (!d ||
+        typeof d.name !== 'string' ||
+        typeof d.pwd !== 'string') return badRequest();
+
+    db.db(ns).collection('db.users').findOne({ name: d.name }, (err, r) => {
       if (err ||
           !r ||
           !r.enabled ||
           !r.pwd ||
-          !bcrypt.compareSync(pwd, r.pwd)) {
-        return cb(null);
+          !bcrypt.compareSync(d.pwd, r.pwd)) {
+        return reject(res);
       }
       let profile = {
-        name: name,
-        pwd: pwd,
+        name: d.name,
         ns: ns,
-        role: r.role || null
+        role: r.role || 'guest'
       };
-      cb({ token: makeToken(profile) });
+      let token = makeToken(profile, d.exp);
+      res.cookie('token', r, {
+        maxAge: ms(d.exp) || ms(config.token.expiresIn),
+        //secure: true,
+        httpOnly: true,
+        signed: true
+      });
+      res.sendStatus(200);
     });
-  }
+  });
 
-  nq.on('token', null, (q, req, res) => {
-    token(q.name, q.params.name, q.params.pwd, r => {
-      if (!r) return reject(res);
-      res.json(q.response(r));
-    });
+  nq.on('logout', null, (q, req, res) => {
+    res.clearCookie('token');
+    res.sendStatus(200);
   });
 }

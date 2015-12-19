@@ -23,6 +23,7 @@
   "dependencies": {
     "bcryptjs": "^2.3.0",
     "compression": "^1.6.0",
+    "cookie-parser": "^1.4.0",
     "etag": "^1.7.0",
     "express": "^4.13.3",
     "fresh": "^0.3.0",
@@ -30,6 +31,7 @@
     "lodash": "^3.10.1",
     "moment": "^2.10.6",
     "mongodb": "^2.1.1",
+    "ms": "^0.7.1",
     "nepq": "^3.0.0-alpha.1"
   },
   "devDependencies": {

@@ -19,7 +19,7 @@ export = function() {
     if (_.isArray(q.params) && q.params.length > 2) return error(res, 'NepDBError', 'Invalid parameters');
 
     let x = q.params;
-    let opt = {};
+    let opt;
 
     if (_.isArray(q.params) && q.params.length === 2) {
       x = q.params[0];
@@ -64,7 +64,7 @@ export = function() {
     if (_.isArray(q.params) && q.params.length > 2) return error(res, 'NepDBError', 'Invalid parameters');
 
     let x = q.params;
-    let opt = {};
+    let opt;
 
     if (_.isArray(q.params) && q.params.length === 2) {
       x = q.params[0];

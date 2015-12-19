@@ -1,3 +1,7 @@
+import {
+  Config,
+} from 'nepdb';
+
 import * as express from 'express';
 import * as http from 'http';
 import { MongoClient, ObjectID } from 'mongodb';
@@ -9,6 +13,7 @@ import * as bcrypt from 'bcryptjs';
 import * as _ from 'lodash';
 var etag = require('etag');
 var fresh = require('fresh');
+import * as cookieParser from 'cookie-parser';
 var config: Config = require('./config');
 
 import opToken = require('./operators/token');
@@ -17,35 +22,13 @@ import opRead = require('./operators/read');
 import opUpdate = require('./operators/update');
 import opDelete = require('./operators/delete');
 
-interface Config {
-  server: {
-    port: number;
-  };
-  database: {
-    user: string;
-    pwd: string;
-    host: string;
-    port: string;
-    maxPoolSize: string;
-  };
-  compression: {
-    level: number;
-  };
-  token: {
-    algorithm: string;
-    expiresIn: string;
-    issuer: string;
-    secret: string;
-  };
-  bcrypt: {
-    cost: number;
-  }
-}
+
 
 function decode(base64) {
   return base64 ? new Buffer(base64, 'base64').toString() : null;
 }
 
+config.server.cookie.secret = decode(config.server.cookie.secret);
 config.token.secret = decode(config.token.secret);
 
 var app = express();
@@ -70,9 +53,11 @@ var nepdb = {
 
   start: () => {
     db = db;
-    app.use(compression(config.compression));
     app.set('x-powered-by', false);
     app.set('etag', 'strong');
+
+    app.use(compression(config.compression));
+    app.use(cookieParser(config.server.cookie.secret));
 
     nq.parser.on('after', q => {
       mapMethodAlias(q);
@@ -194,8 +179,9 @@ var methodAlias = {
   u: 'update',
   d: 'delete',
   l: 'list',
-  t: 'token',
   n: 'count',
+  ln: 'login',
+  lo: 'logout',
 };
 
 function mapMethodAlias(q) {
@@ -212,7 +198,7 @@ function calc(k, v) {
 
 function preprocess(q) {
   _.forOwn(q, (v, k, a) => {
-    if (k.startsWith('$')) {
+    if (k[0] === '$') {
       let p;
       _.forOwn(v, (_v, _k, _a) => {
         p = calc(k, _v);
@@ -256,10 +242,7 @@ function log(q, req, ...args) {
 }
 
 function getToken(req) {
-  if (!req.headers.authorization) return null;
-  let [method, token] = req.headers.authorization.split(' ');
-  if (method !== 'Bearer') return null;
-  return token;
+  return req.signedCookies.token || null;
 }
 
 function authen(req, res, next) {
