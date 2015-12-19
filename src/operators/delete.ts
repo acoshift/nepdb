@@ -5,33 +5,23 @@ import {
 
 import * as _ from 'lodash';
 
-var op: Operator = function(nepdb: NepDB) {
-  let {
-    nq,
-    reject,
-    resp,
-    isAuth,
-    collection,
-    error,
-    objectId,
-  } = nepdb;
-
-  nq.on('delete', null, (q, req, res) => {
+var op: Operator = function(n: NepDB) {
+  n.nq.on('delete', null, (q, req, res) => {
     // check delete authorization
-    if (!isAuth(q, req, 'd')) return reject(res);
+    if (!n.isAuth(q, req, 'd')) return n.reject(res);
 
     // change params to array
     if (!_.isArray(q.params)) q.params = [ q.params ];
 
     // check are params string
-    if (!_.every(q.params, _.isString)) return error(res, 'NepDBError', 400);
+    if (!_.every(q.params, _.isString)) return n.error(res, 'NepDBError', 400);
 
     // convert id string to ObjectID
-    let params = _.map(q.params, objectId);
+    let params = _.map(q.params, n.objectId);
 
-    collection(q, (err, c) => {
-      if (err || !c) return reject(res);
-      c.deleteMany({ _id: { $in: params } }, resp.bind(this, req, res, q));
+    n.collection(q, (err, c) => {
+      if (err || !c) return n.reject(res);
+      c.deleteMany({ _id: { $in: params } }, n.resp.bind(n, req, res, q));
     });
   });
 }

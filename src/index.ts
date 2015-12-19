@@ -272,8 +272,8 @@ var nepdb = new class implements NepDB {
       this.preprocess(q.params);
     });
 
-    this.nq.use(this.log);
-    this.nq.use(this.autho);
+    this.nq.use(this.log.bind(this));
+    this.nq.use(this.autho.bind(this));
 
     opToken(this);
     opCreate(this);
@@ -292,12 +292,12 @@ var nepdb = new class implements NepDB {
     this.app.use((req, res, next) => {
       // TODO: config CORS from database
       res.header('Access-Control-Allow-Origin', '*');
-      res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+      res.header('Access-Control-Allow-Headers', 'Content-Type');
       if (req.method === 'OPTIONS') return res.sendStatus(204);
       next();
     });
 
-    this.app.use(this.authen);
+    this.app.use(this.authen.bind(this));
     this.app.use(this.nq.bodyParser());
 
     this.app.use((req, res) => {

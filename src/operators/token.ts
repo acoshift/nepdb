@@ -7,19 +7,10 @@ import * as bcrypt from 'bcryptjs';
 import * as _ from 'lodash';
 import ms = require('ms');
 
-var op: Operator = function(nepdb: NepDB) {
-  let {
-    nq,
-    db,
-    reject,
-    makeToken,
-    config,
-    error,
-  } = nepdb;
-
-  nq.on('login', null, (q, req, res) => {
+var op: Operator = function(n: NepDB) {
+  n.nq.on('login', null, (q, req, res) => {
     function badRequest() {
-      error(res, 'NepDBError', 400);
+      n.error(res, 'NepDBError', 400);
     }
     // check params
     let ns = q.name;
@@ -53,22 +44,22 @@ var op: Operator = function(nepdb: NepDB) {
         typeof d.name !== 'string' ||
         typeof d.pwd !== 'string') return badRequest();
 
-    db.db(ns).collection('db.users').findOne({ name: d.name }, (err, r) => {
+    n.db.db(ns).collection('db.users').findOne({ name: d.name }, (err, r) => {
       if (err ||
           !r ||
           !r.enabled ||
           !r.pwd ||
           !bcrypt.compareSync(d.pwd, r.pwd)) {
-        return reject(res);
+        return n.reject(res);
       }
       let profile = {
         name: d.name,
         ns: ns,
         role: r.role || 'guest'
       };
-      let token = makeToken(profile, d.exp);
+      let token = n.makeToken(profile, d.exp);
       res.cookie('token', r, {
-        maxAge: ms(d.exp) || ms(config.token.expiresIn),
+        maxAge: d.exp ? ms(d.exp) : ms(n.config.token.expiresIn),
         secure: true,
         httpOnly: true,
         signed: true
@@ -77,7 +68,7 @@ var op: Operator = function(nepdb: NepDB) {
     });
   });
 
-  nq.on('logout', null, (q, req, res) => {
+  n.nq.on('logout', null, (q, req, res) => {
     res.clearCookie('token');
     res.sendStatus(200);
   });
