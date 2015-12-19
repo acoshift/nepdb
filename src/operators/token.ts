@@ -58,19 +58,24 @@ var op: Operator = function(n: NepDB) {
         role: r.role || 'guest'
       };
       let token = n.makeToken(profile, d.exp);
-      res.cookie('token', token, {
+      /*res.cookie('token', token, {
         maxAge: d.exp ? ms(d.exp) : ms(n.config.token.expiresIn),
         secure: true,
         httpOnly: true
-      });
-      res.sendStatus(200);
+      });*/
+      /*res.status(200).json({
+        ok: 1
+      });*/
+      res.json(q.response({ token: token }));
     });
   });
 
+  /*
   n.nq.on('logout', null, (q, req, res) => {
     res.clearCookie('token');
     res.sendStatus(200);
   });
+  */
 }
 
 export = op;

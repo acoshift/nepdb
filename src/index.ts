@@ -14,7 +14,7 @@ import * as bcrypt from 'bcryptjs';
 import * as _ from 'lodash';
 var etag = require('etag');
 var fresh = require('fresh');
-import * as cookieParser from 'cookie-parser';
+// import * as cookieParser from 'cookie-parser';
 
 import opToken = require('./operators/token');
 import opCreate = require('./operators/create');
@@ -101,12 +101,12 @@ var nepdb = new class implements NepDB {
 
   makeToken(user, exp) {
     return jwt.sign({
-      sub: `${user.name}@${user.ns}`,
+      sub: `${user.name}/${user.ns}`,
       role: user.role
     }, this.config.token.secret, {
       algorithm: this.config.token.algorithm,
-      expiresIn: exp || this.config.token.expiresIn,
-      issuer: this.config.token.issuer
+      // expiresIn: exp || this.config.token.expiresIn,
+      // issuer: this.config.token.issuer
     });
   }
 
@@ -119,7 +119,11 @@ var nepdb = new class implements NepDB {
   }
 
   getToken(req) {
-    return req.cookies.token || null;
+    let p = req.get('authorization');
+    if (!p) return null;
+    let [ m, t ] = p.split(' ');
+    if (m.toLowerCase() !== 'bearer') return null;
+    return t || null;
   }
 
   authen(req, res, next) {
@@ -129,7 +133,7 @@ var nepdb = new class implements NepDB {
       if (!token) throw new Error();
       user = jwt.verify(token, this.config.token.secret, { algorithms: [ this.config.token.algorithm ] });
       if (!user || !user.sub || !user.role) throw new Error();
-      let [ name, ns ] = user.sub.split('@');
+      let [ name, ns ] = user.sub.split('/');
       user.name = name;
       user.ns = ns;
     } catch (e) {
@@ -241,7 +245,7 @@ var nepdb = new class implements NepDB {
 
   constructor() {
     // decode config
-    this.config.server.cookie.secret = this.decode(this.config.server.cookie.secret);
+    // this.config.server.cookie.secret = this.decode(this.config.server.cookie.secret);
     this.config.token.secret = this.decode(this.config.token.secret);
 
     var connectionUri = (() => {
@@ -253,7 +257,7 @@ var nepdb = new class implements NepDB {
     this.app.set('etag', 'strong');
 
     this.app.use(compression(this.config.compression));
-    this.app.use(cookieParser(/*this.config.server.cookie.secret*/));
+    // this.app.use(cookieParser(/*this.config.server.cookie.secret*/));
 
     MongoClient.connect(connectionUri, (err, database) => {
       if (err) throw err;
@@ -292,7 +296,7 @@ var nepdb = new class implements NepDB {
     this.app.use((req, res, next) => {
       // TODO: config CORS from database
       res.header('Access-Control-Allow-Origin', '*');
-      res.header('Access-Control-Allow-Headers', 'Content-Type');
+      res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
       if (req.method === 'OPTIONS') return res.sendStatus(204);
       next();
     });
