@@ -22,7 +22,7 @@ import opRead = require('./operators/read');
 import opUpdate = require('./operators/update');
 import opDelete = require('./operators/delete');
 
-var nepdb = class implements NepDB {
+var nepdb = new class implements NepDB {
   config: Config = require('./config');
   app = express();
   db: Db = null;
@@ -304,5 +304,4 @@ var nepdb = class implements NepDB {
       this.error(res, 'NepDBError', 400);
     });
   }
-
 };
