@@ -5,6 +5,11 @@ import {
 
 import * as _ from 'lodash';
 
+interface ReadOptions {
+  limit?: number;
+  skip?: number;
+}
+
 var op: Operator = function(n: NepDB) {
   n.nq.on('list', null, (q, req, res) => {
     // check read authorization
@@ -14,7 +19,7 @@ var op: Operator = function(n: NepDB) {
     if (_.isArray(q.params) && q.params.length > 2) return n.error(res, 'NepDBError', 400);
 
     let x = q.params;
-    let opt;
+    let opt: ReadOptions = {};
 
     if (_.isArray(q.params) && q.params.length === 2) {
       x = q.params[0];
@@ -59,7 +64,7 @@ var op: Operator = function(n: NepDB) {
     if (_.isArray(q.params) && q.params.length > 2) return n.error(res, 'NepDBError', 400);
 
     let x = q.params;
-    let opt;
+    let opt: ReadOptions = {};
 
     if (_.isArray(q.params) && q.params.length === 2) {
       x = q.params[0];
@@ -68,8 +73,7 @@ var op: Operator = function(n: NepDB) {
 
     opt = {
       limit: opt.limit || null,
-      skip: opt.skip || null,
-      hint: opt.hint || null
+      skip: opt.skip || null
     };
 
     n.collection(q, (err, c) => {

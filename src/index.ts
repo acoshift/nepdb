@@ -119,7 +119,7 @@ var nepdb = new class implements NepDB {
   }
 
   getToken(req) {
-    return req.signedCookies.token || null;
+    return req.cookies.token || null;
   }
 
   authen(req, res, next) {
@@ -253,7 +253,7 @@ var nepdb = new class implements NepDB {
     this.app.set('etag', 'strong');
 
     this.app.use(compression(this.config.compression));
-    this.app.use(cookieParser(this.config.server.cookie.secret));
+    this.app.use(cookieParser(/*this.config.server.cookie.secret*/));
 
     MongoClient.connect(connectionUri, (err, database) => {
       if (err) throw err;

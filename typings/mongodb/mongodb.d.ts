@@ -357,7 +357,7 @@ declare module "mongodb" {
 
     count(callback: (err: Error, result: any) => void): void;
     count(query: Object, callback: (err: Error, result: any) => void): void;
-    count(query: Object, options: { readPreference: string; }, callback: (err: Error, result: any) => void): void;
+    count(query: Object, options: any, callback: (err: Error, result: any) => void): void;
 
     drop(callback?: (err: Error, result: any) => void): void;
     /**

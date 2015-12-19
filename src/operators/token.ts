@@ -58,11 +58,10 @@ var op: Operator = function(n: NepDB) {
         role: r.role || 'guest'
       };
       let token = n.makeToken(profile, d.exp);
-      res.cookie('token', r, {
+      res.cookie('token', token, {
         maxAge: d.exp ? ms(d.exp) : ms(n.config.token.expiresIn),
         secure: true,
-        httpOnly: true,
-        signed: true
+        httpOnly: true
       });
       res.sendStatus(200);
     });
