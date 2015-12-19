@@ -22,12 +22,6 @@ import opRead = require('./operators/read');
 import opUpdate = require('./operators/update');
 import opDelete = require('./operators/delete');
 
-
-
-
-config.server.cookie.secret = decode(config.server.cookie.secret);
-config.token.secret = decode(config.token.secret);
-
 var nepdb = class implements NepDB {
   config: Config = require('./config');
   app = express();
@@ -246,10 +240,20 @@ var nepdb = class implements NepDB {
   }
 
   constructor() {
+    // decode config
+    this.config.server.cookie.secret = this.decode(this.config.server.cookie.secret);
+    this.config.token.secret = this.decode(this.config.token.secret);
+
     var connectionUri = (() => {
       let { user, pwd, host, port, maxPoolSize } = this.config.database;
       return `mongodb://${(user && pwd) ? `${user}:${escape(pwd)}@` : ''}${host || 'localhost'}:${port || 27017}/?maxPoolSize=${maxPoolSize}`;
     })();
+
+    this.app.set('x-powered-by', false);
+    this.app.set('etag', 'strong');
+
+    this.app.use(compression(this.config.compression));
+    this.app.use(cookieParser(this.config.server.cookie.secret));
 
     MongoClient.connect(connectionUri, (err, database) => {
       if (err) throw err;
@@ -262,12 +266,6 @@ var nepdb = class implements NepDB {
         console.log(`Server listening on port ${port}`);
       });
     });
-
-    this.app.set('x-powered-by', false);
-    this.app.set('etag', 'strong');
-
-    this.app.use(compression(this.config.compression));
-    this.app.use(cookieParser(this.config.server.cookie.secret));
 
     this.nq.parser.on('after', q => {
       this.mapMethodAlias(q);
