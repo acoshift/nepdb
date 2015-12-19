@@ -1,6 +1,11 @@
+import {
+  NepDB,
+  Operator,
+} from 'nepdb';
+
 import * as _ from 'lodash';
 
-export = function() {
+var op: Operator = function() {
   let {
     nq,
     reject,
@@ -30,3 +35,5 @@ export = function() {
     });
   });
 }
+
+export = op;

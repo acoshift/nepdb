@@ -1,6 +1,11 @@
+import {
+  NepDB,
+  Operator,
+} from 'nepdb';
+
 import * as _ from 'lodash';
 
-export = function() {
+var op: Operator = function(nepdb: NepDB) {
   let {
     nq,
     reject,
@@ -8,7 +13,7 @@ export = function() {
     isAuth,
     collection,
     error,
-  } = this;
+  } = nepdb;
 
   nq.on('create', null, (q, req, res) => {
     // check create authorization
@@ -26,3 +31,5 @@ export = function() {
     });
   });
 }
+
+export = op;

@@ -1,8 +1,13 @@
+import {
+  NepDB,
+  Operator,
+} from 'nepdb';
+
 import * as bcrypt from 'bcryptjs';
 import * as _ from 'lodash';
 import ms = require('ms');
 
-export = function() {
+var op: Operator = function(nepdb: NepDB) {
   let {
     nq,
     db,
@@ -10,7 +15,7 @@ export = function() {
     makeToken,
     config,
     error,
-  } = this;
+  } = nepdb;
 
   nq.on('login', null, (q, req, res) => {
     function badRequest() {
@@ -77,3 +82,5 @@ export = function() {
     res.sendStatus(200);
   });
 }
+
+export = op;

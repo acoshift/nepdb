@@ -1,6 +1,11 @@
+import {
+  NepDB,
+  Operator,
+} from 'nepdb';
+
 import * as _ from 'lodash';
 
-export = function() {
+var op: Operator = function(nepdb: NepDB) {
   let {
     nq,
     reject,
@@ -9,7 +14,7 @@ export = function() {
     collection,
     objectId,
     error,
-  } = this;
+  } = nepdb;
 
   nq.on('update', null, (q, req, res) => {
     // check update authorization
@@ -36,3 +41,5 @@ export = function() {
     });
   });
 }
+
+export = op;
