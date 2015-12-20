@@ -11,7 +11,7 @@ interface ReadOptions {
 }
 
 var op: Operator = function(n: NepDB) {
-  n.nq.on('list', null, (q, req, res) => {
+  n.nq.on('query', null, (q, req, res) => {
     // check read authorization
     if (!n.isAuth(q, req, 'r')) return n.reject(res);
 

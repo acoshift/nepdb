@@ -208,10 +208,10 @@ var nepdb = new class implements NepDB {
     r: 'read',
     u: 'update',
     d: 'delete',
-    l: 'list',
+    q: 'query',
     n: 'count',
-    ln: 'login',
-    lo: 'logout',
+    l: 'login',
+    // lo: 'logout',
   };
 
   mapMethodAlias(q) {
