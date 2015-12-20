@@ -178,6 +178,7 @@ var nepdb = new class implements NepDB {
     if (!req.user || !req.autho) return false;
 
     // check wildcards
+    if (req.autho === 1) return true;
     if (req.autho['*'] && req.autho['*'][method] === 1) return true;
 
     let [ , c ] = this.ns(q);
