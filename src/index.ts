@@ -200,7 +200,12 @@ var nepdb = new class implements NepDB {
       t: this.decodeToken(this.getToken(req)),
       q: q
     };
-    this.db.db('nepdb').collection('logs').insertOne(l, { w: 0 }, null);
+    let [ , ns ] = (l.t && l.t.payload.sub) ? l.t.payload.sub.split('/') : [null, null];
+    if (ns) {
+      this.db.db(ns).collection('db.logs').insertOne(l, { w: 0 }, null);
+    } else {
+      this.db.db('nepdb').collection('logs').insertOne(l, { w: 0 }, null);
+    }
     args.pop()();
   }
 
