@@ -302,7 +302,8 @@ var nepdb = new class implements NepDB {
     this.app.use((req, res, next) => {
       // TODO: config CORS from database
       res.header('Access-Control-Allow-Origin', '*');
-      res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+      res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, If-None-Match');
+      res.header('Access-Control-Expose-Headers', 'etag');
       if (req.method === 'OPTIONS') return res.sendStatus(204);
       next();
     });
