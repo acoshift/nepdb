@@ -29,9 +29,9 @@
     "fresh": "^0.3.0",
     "jsonwebtoken": "^5.4.1",
     "lodash": "^3.10.1",
-    "mongodb": "^2.1.1",
+    "mongodb": "^2.1.2",
     "ms": "^0.7.1",
-    "nepq": "^3.0.0-alpha.1"
+    "nepq": "^3.0.0-alpha.3"
   },
   "devDependencies": {
     "babel-preset-es2015": "^6.3.13",
