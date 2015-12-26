@@ -54,7 +54,7 @@ var nepdb = new class implements NepDB {
     this.db.db(d).collection(c, {
       w: 1,
       j: false,
-      strict: true
+      // strict: true
     }, cb);
   }
 
