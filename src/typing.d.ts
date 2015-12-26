@@ -7,6 +7,7 @@ declare module 'nepdb' {
     server: {
       port: number;
       cookie: {
+        expiresIn: string;
         secret: string;
       }
     };

@@ -57,11 +57,11 @@ var op: Operator = function(n: NepDB) {
         ns: ns
       };
       let token = n.makeToken(profile, d.exp);
-      /*res.cookie('token', token, {
-        maxAge: d.exp ? ms(d.exp) : ms(n.config.token.expiresIn),
+      res.cookie('token', token, {
+        maxAge: d.exp ? ms(d.exp) : ms(n.config.server.cookie.expiresIn),
         secure: true,
         httpOnly: true
-      });*/
+      });
       /*res.status(200).json({
         ok: 1
       });*/

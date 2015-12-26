@@ -14,7 +14,7 @@ import * as bcrypt from 'bcryptjs';
 import * as _ from 'lodash';
 var etag = require('etag');
 var fresh = require('fresh');
-// import * as cookieParser from 'cookie-parser';
+import * as cookieParser from 'cookie-parser';
 
 import opToken = require('./operators/token');
 import opCreate = require('./operators/create');
@@ -119,11 +119,25 @@ var nepdb = new class implements NepDB {
   }
 
   getToken(req) {
+    let token = null;
+
+    // try get token from authoization header first
     let p = req.get('authorization');
-    if (!p) return null;
-    let [ m, t ] = p.split(' ');
-    if (m.toLowerCase() !== 'bearer') return null;
-    return t || null;
+    if (p) {
+      let [ m, t ] = p.split(' ');
+      if (m.toLowerCase() === 'bearer') {
+        token = t;
+      }
+    }
+
+    // if no token in authorization, try get in cookies
+    if (!token) {
+      if (req.cookies.token) {
+        token = req.cookies.token;
+      }
+    }
+
+    return token;
   }
 
   authen(req, res, next) {
@@ -273,7 +287,7 @@ var nepdb = new class implements NepDB {
     this.app.set('etag', 'strong');
 
     this.app.use(compression(this.config.compression));
-    // this.app.use(cookieParser(/*this.config.server.cookie.secret*/));
+    this.app.use(cookieParser(/*this.config.server.cookie.secret*/));
 
     MongoClient.connect(connectionUri, (err, database) => {
       if (err) throw err;
