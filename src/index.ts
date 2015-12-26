@@ -86,7 +86,25 @@ var nepdb = new class implements NepDB {
     this.error(res, 'NepDBError', 401);
   }
 
+  _filter(data) {
+    function f(data) {
+      if (data.pwd) {
+        delete data.pwd;
+      }
+      return data;
+    }
+
+    if (_.isArray(data)) {
+      data = _.forEach(data, f);
+    } else {
+      data = f(data);
+    }
+
+    return data;
+  }
+
   resp(req, res, q, err, r) {
+    r = this._filter(r);
     if (err) {
       this.error(res, err.name, 500, err.message);
     } else {
