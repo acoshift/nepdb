@@ -241,7 +241,7 @@ var nepdb = new class implements NepDB {
     q: 'query',
     n: 'count',
     l: 'login',
-    // lo: 'logout',
+    o: 'logout',
   };
 
   mapMethodAlias(q) {

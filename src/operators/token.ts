@@ -69,12 +69,10 @@ var op: Operator = function(n: NepDB) {
     });
   });
 
-  /*
   n.nq.on('logout', null, (q, req, res) => {
     res.clearCookie('token');
-    res.sendStatus(200);
+    res.json({ ok: 1 });
   });
-  */
 }
 
 export = op;
