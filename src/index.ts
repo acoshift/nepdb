@@ -272,6 +272,10 @@ var nepdb = new class implements NepDB {
     switch (k) {
       case '$bcrypt':
         return bcrypt.hashSync(v, this.config.bcrypt.cost);
+      case '$id':
+        return this.objectId(v);
+      case '$date':
+        return new Date(v);
     }
     return null;
   }
