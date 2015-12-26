@@ -54,8 +54,7 @@ var op: Operator = function(n: NepDB) {
       }
       let profile = {
         name: d.name,
-        ns: ns,
-        role: r.role || 'guest'
+        ns: ns
       };
       let token = n.makeToken(profile, d.exp);
       /*res.cookie('token', token, {

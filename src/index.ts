@@ -101,12 +101,12 @@ var nepdb = new class implements NepDB {
 
   makeToken(user, exp) {
     return jwt.sign({
-      sub: `${user.name}/${user.ns}`,
-      role: user.role
+      name: user.name,
+      ns: user.ns
     }, this.config.token.secret, {
       algorithm: this.config.token.algorithm,
       // expiresIn: exp || this.config.token.expiresIn,
-      // issuer: this.config.token.issuer
+      issuer: this.config.token.issuer
     });
   }
 
@@ -132,19 +132,26 @@ var nepdb = new class implements NepDB {
     try {
       if (!token) throw new Error();
       user = jwt.verify(token, this.config.token.secret, { algorithms: [ this.config.token.algorithm ] });
-      if (!user || !user.sub || !user.role) throw new Error();
-      let [ name, ns ] = user.sub.split('/');
-      user.name = name;
-      user.ns = ns;
+      if (!user || !user.name || !user.ns) throw new Error();
     } catch (e) {
       user = {
-        sub: 'guest',
-        role: 'guest',
-        name: 'guest',
+        name: 'guest'
       };
     }
-    req.user = user;
-    next();
+
+    // get user's info
+    if (user.ns) {
+      this.db.db(user.ns).collection('db.users').findOne({ name: user.name }, (err, r) => {
+        if (err || !r) return;
+        user._id = r._id;
+        user.role = r.role;
+        req.user = user;
+        next();
+      });
+    } else {
+      req.user = user;
+      next();
+    }
   }
 
   autho(q, req, ...args) {
@@ -154,8 +161,6 @@ var nepdb = new class implements NepDB {
 
     // add user information if not exists
     let user = req.user;
-    if (!user) user = {};
-    if (!user.sub) user.sub = user.name = 'guest';
     if (!user.role) user.role = 'guest';
     if (!user.ns || user.ns !== d) {
       user.role = 'guest';
@@ -166,8 +171,13 @@ var nepdb = new class implements NepDB {
     // no namespace = no autho
     if (!d) return args.pop()();
 
-    // get user's role from database
-    this.db.db(d).collection('db.roles').findOne({name: user.role}, (err, r) => {
+    // get role info
+    this.db.db(d).collection('db.roles').findOne({
+      $or: [
+        { _id: user.role },
+        { name: user.role }
+      ]
+    }, (err, r) => {
       if (err || !r) return args.pop()();
       req.autho = r.dbs;
       args.pop()();
