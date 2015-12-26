@@ -34,7 +34,7 @@ var op: Operator = function(n: NepDB) {
 
     n.collection(q, (err, c) => {
       if (err || !c) return n.reject(res);
-      c.updateOne(query, doc, n.resp.bind(this, req, res, q));
+      c.updateOne(query, doc, n.resp.bind(n, req, res, q));
     });
   });
 }
