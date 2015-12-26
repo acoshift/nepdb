@@ -217,22 +217,24 @@ var nepdb = new class implements NepDB {
   }
 
   isAuth(q, req, method) {
-    if (!req.user || !req.autho) return false;
+    if (!req.user || !req.autho) return 0;
 
     // check wildcards
-    if (req.autho === 1) return true;
-    if (req.autho['*'] && req.autho['*'][method] === 1) return true;
+    if (_.isFinite(req.autho)) return req.autho;
+    if (_.isFinite(req.autho['*'])) return req.autho['*'];
+    if (req.autho['*'] && _.isFinite(req.autho['*'][method])) return req.autho['*'][method];
 
     let [ , c ] = this.ns(q);
     c = c.split('.');
     while (c.length) {
       let k = req.autho[c.join('.')];
-      if (k && (k === 1 || k[method] === 1)) return true;
+      if (_.isFinite(k)) return k;
+      if (k && _.isFinite(k[method])) return k[method];
       c.pop();
     }
 
     // no autho found
-    return false;
+    return 0;
   }
 
   // class functions

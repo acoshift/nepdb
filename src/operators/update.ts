@@ -8,7 +8,9 @@ import * as _ from 'lodash';
 var op: Operator = function(n: NepDB) {
   n.nq.on('update', null, (q, req, res) => {
     // check update authorization
-    if (!n.isAuth(q, req, 'u')) return n.reject(res);
+    let auth = n.isAuth(q, req, 'u');
+    if (auth === 0) return n.reject(res);
+    if (auth === 2 && !req.user._id) return n.reject(res);
 
     // check params
     if (!_.isArray(q.params) ||
@@ -25,9 +27,14 @@ var op: Operator = function(n: NepDB) {
       $currentDate: { _updated: true }
     };
 
+    let query: any = { _id: q.params[0] };
+    if (auth === 2) {
+      query._owner = req.user._id;
+    }
+
     n.collection(q, (err, c) => {
       if (err || !c) return n.reject(res);
-      c.updateOne({ _id: q.params[0] }, doc, n.resp.bind(this, req, res, q));
+      c.updateOne(query, doc, n.resp.bind(this, req, res, q));
     });
   });
 }

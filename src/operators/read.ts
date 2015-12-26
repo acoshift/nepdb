@@ -13,7 +13,9 @@ interface ReadOptions {
 var op: Operator = function(n: NepDB) {
   n.nq.on('query', null, (q, req, res) => {
     // check read authorization
-    if (!n.isAuth(q, req, 'r')) return n.reject(res);
+    let auth = n.isAuth(q, req, 'r');
+    if (auth === 0) return n.reject(res);
+    if (auth === 2 && !req.user._id) return n.reject(res);
 
     // check params
     if (_.isArray(q.params) && q.params.length > 2) return n.error(res, 'NepDBError', 400);
@@ -31,6 +33,10 @@ var op: Operator = function(n: NepDB) {
       skip: opt.skip || 0
     };
 
+    if (auth === 2) {
+      x._owner = req.user._id;
+    }
+
     n.collection(q, (err, c) => {
       if (err || !c) return n.reject(res);
       c.find(x).skip(opt.skip).limit(opt.limit).toArray(n.resp.bind(n, req, res, q));
@@ -39,7 +45,9 @@ var op: Operator = function(n: NepDB) {
 
   n.nq.on('read', null, (q, req, res) => {
     // check read authorization
-    if (!n.isAuth(q, req, 'r')) return n.reject(res);
+    let auth = n.isAuth(q, req, 'r');
+    if (auth === 0) return n.reject(res);
+    if (auth === 2 && !req.user._id) return n.reject(res);
 
     // change params to array
     if (!_.isArray(q.params)) q.params = [ q.params ];
@@ -50,15 +58,22 @@ var op: Operator = function(n: NepDB) {
     // convert id string to ObjectID
     let params = _.map(q.params, n.objectId);
 
+    let query: any = { _id: { $in: params } };
+    if (auth === 2) {
+      query._owner = req.user._id;
+    }
+
     n.collection(q, (err, c) => {
       if (err || !c) return n.reject(res);
-      c.find({ _id: { $in: params } }).toArray(n.resp.bind(n, req, res, q));
+      c.find(query).toArray(n.resp.bind(n, req, res, q));
     });
   });
 
   n.nq.on('count', null, (q, req, res) => {
     // check read authorization
-    if (!n.isAuth(q, req, 'r')) return n.reject(res);
+    let auth = n.isAuth(q, req, 'r');
+    if (auth === 0) return n.reject(res);
+    if (auth === 2 && !req.user._id) return n.reject(res);
 
     // check params
     if (_.isArray(q.params) && q.params.length > 2) return n.error(res, 'NepDBError', 400);
@@ -75,6 +90,10 @@ var op: Operator = function(n: NepDB) {
       limit: opt.limit || null,
       skip: opt.skip || null
     };
+
+    if (auth === 2) {
+      x._owner = req.user._id;
+    }
 
     n.collection(q, (err, c) => {
       if (err || !c) return n.reject(res);

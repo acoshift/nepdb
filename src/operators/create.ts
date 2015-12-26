@@ -8,7 +8,7 @@ import * as _ from 'lodash';
 var op: Operator = function(n: NepDB) {
   n.nq.on('create', null, (q, req, res) => {
     // check create authorization
-    if (!n.isAuth(q, req, 'c')) return n.reject(res);
+    if (n.isAuth(q, req, 'c') === 0) return n.reject(res);
 
     // change params to array
     if (!_.isArray(q.params)) q.params = [ q.params ];

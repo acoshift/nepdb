@@ -53,7 +53,7 @@ declare module 'nepdb' {
     getToken(req: express.Request): string;
     authen(req: express.Request, res: express.Response, next: Function): void;
     autho(q: nepq.NepQ, req: express.Request, ...args): void;
-    isAuth(q: nepq.NepQ, req: express.Request, method: string): boolean;
+    isAuth(q: nepq.NepQ, req: express.Request, method: string): number;
 
   }
 
