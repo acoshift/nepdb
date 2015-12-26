@@ -16,6 +16,11 @@ var op: Operator = function(n: NepDB) {
     // check are params plain object
     if (!_.every(q.params, _.isPlainObject)) return n.error(res, 'NepDBError', 400);
 
+    // add owner to params
+    if (req.user._id) {
+      _.forEach(q.params, x => x._owner = req.user._id);
+    }
+
     n.collection(q, (err, c) => {
       if (err || !c) return n.reject(res);
       c.insertMany(q.params, n.resp.bind(n, req, res, q));
