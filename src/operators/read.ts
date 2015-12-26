@@ -65,7 +65,7 @@ var op: Operator = function(n: NepDB) {
 
     n.collection(q, (err, c) => {
       if (err || !c) return n.reject(res);
-      c.find(query).toArray(n.resp.bind(n, req, res, q));
+      c.findOne(query, n.resp.bind(n, req, res, q));
     });
   });
 
