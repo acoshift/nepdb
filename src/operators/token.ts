@@ -62,10 +62,20 @@ var op: Operator = function(n: NepDB) {
         secure: true,
         httpOnly: true
       });
-      /*res.status(200).json({
-        ok: 1
-      });*/
-      res.json(q.response({ token: token }));
+      r = n.filterResponse(r);
+      let resp: any = { token: token, user: r };
+
+      n.db.db(ns).collection('db.roles').findOne({
+        $or: [
+          { _id: r.role },
+          { name: r.role }
+        ]
+      }, (err, r) => {
+        if (!err && r) {
+          resp.user.role = n.filterResponse(r);
+        }
+        res.json(q.response(resp));
+      });
     });
   });
 

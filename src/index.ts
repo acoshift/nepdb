@@ -86,7 +86,7 @@ var nepdb = new class implements NepDB {
     this.error(res, 'NepDBError', 401);
   }
 
-  _filter(data) {
+  filterResponse(data) {
     function f(data) {
       if (data.pwd) {
         delete data.pwd;
@@ -104,7 +104,7 @@ var nepdb = new class implements NepDB {
   }
 
   resp(req, res, q, err, r) {
-    r = this._filter(r);
+    r = this.filterResponse(r);
     if (err) {
       this.error(res, err.name, 500, err.message);
     } else {

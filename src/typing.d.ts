@@ -46,6 +46,7 @@ declare module 'nepdb' {
     ns(q: nepq.NepQ): any[];
     error(res: express.Response, name: string, code?: number, message?: string): void;
     reject(res: express.Response): void;
+    filterResponse(data: any): any;
     resp(req: express.Request, res: express.Response, q: nepq.NepQ, err: Error, r: any): void;
     makeToken(user: any, exp: string): any;
     decodeToken(token: any): any;
