@@ -19,5 +19,8 @@
         "**/*.ts",
         "**/*.tsx",
         "!node_modules/**"
-    ]
+    ],
+    "atom": {
+        "rewriteTsconfig": false
+    }
 }
