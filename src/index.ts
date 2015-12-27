@@ -244,7 +244,7 @@ var nepdb = new class implements NepDB {
       t: this.decodeToken(this.getToken(req)),
       q: q
     };
-    let ns = l.t.payload.ns;
+    let ns = l.t && l.t.payload && l.t.payload.ns || null;
     if (ns) {
       this.db.db(ns).collection('db.logs').insertOne(l, { w: 0 }, null);
     } else {
