@@ -26,8 +26,17 @@ var op: Operator = function(n: NepDB) {
       query._owner = req.user._id;
     }
 
+    let [ d, col ] = n.ns(q);
+
     n.collection(q, (err, c) => {
       if (err || !c) return n.reject(res);
+      c.find(query).each((err, r) => {
+        if (err || !r) return;
+        n.db.db(d).collection('db.trash').insertOne({
+          db: col,
+          data: r
+        }, { w: 0 }, null);
+      });
       c.deleteMany(query, n.resp.bind(n, req, res, q));
     });
   });
