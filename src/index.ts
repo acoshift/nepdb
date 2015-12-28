@@ -258,6 +258,7 @@ var nepdb = new class implements NepDB {
     r: 'read',
     u: 'update',
     d: 'delete',
+    e: 'restore',
     q: 'query',
     n: 'count',
     l: 'login',
