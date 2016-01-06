@@ -283,6 +283,9 @@ var nepdb = new class implements NepDB {
 
   preprocess(q) {
     _.forOwn(q, (v, k, a) => {
+      if (typeof v === 'object') {
+        this.preprocess(v);
+      }
       if (k[0] === '$') {
         let p;
         _.forOwn(v, (_v, _k, _a) => {
@@ -290,8 +293,6 @@ var nepdb = new class implements NepDB {
           if (p !== null) a[_k] = p;
         });
         if (p) delete a[k];
-      } else if (typeof v === 'object') {
-        this.preprocess(v);
       } else if (k === '_id') {
         a[k] = this.objectId(v);
       }
