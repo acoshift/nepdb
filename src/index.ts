@@ -227,7 +227,7 @@ var nepdb = new class implements NepDB {
     let [ , c ] = this.ns(q);
     c = c.split('.');
     while (c.length) {
-      let k = req.autho[c.join('.')];
+      let k = _.get(req.autho, c.join('.'));
       if (_.isFinite(k)) return k;
       if (k && _.isFinite(k[method])) return k[method];
       c.pop();
