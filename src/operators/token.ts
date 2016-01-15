@@ -83,6 +83,32 @@ var op: Operator = function(n: NepDB) {
     res.clearCookie('token');
     res.json({ ok: 1 });
   });
+
+  n.nq.on('user', null, (q, req, res) => {
+    if (!req.user || !req.user._id || !req.user.ns) {
+      return n.reject(res);
+    }
+    let ns = req.user.ns;
+    let _id = req.user._id;
+    n.db.db(ns).collection('db.users').findOne({ _id: _id }, (err, r) => {
+      if (err ||
+          !r ||
+          !r.enabled) {
+        return n.reject(res);
+      }
+      n.db.db(ns).collection('db.roles').findOne({
+        $or: [
+          { _id: r.role },
+          { name: r.role }
+        ]
+      }, (err, k) => {
+        if (!err && k) {
+          r.role = k;
+        }
+        res.json(q.response(n.filterResponse(r)));
+      });
+    });
+  });
 }
 
 export = op;

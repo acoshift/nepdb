@@ -194,7 +194,7 @@ var nepdb = new class implements NepDB {
     // add user information if not exists
     let user = req.user;
     if (!user.role) user.role = 'guest';
-    if (!user.ns || user.ns !== d) {
+    if (d !== '' && (!user.ns || user.ns !== d)) {
       user.role = 'guest';
       user.ns = d;
     }
